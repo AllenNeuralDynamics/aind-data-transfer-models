@@ -10,7 +10,13 @@ from aind_data_schema.core.data_description import build_data_name
 from aind_data_schema.models.modalities import Modality
 from aind_data_schema.models.platforms import Platform
 from aind_slurm_rest import V0036JobSubmission
-from pydantic import ConfigDict, Field, ValidationInfo, field_validator
+from pydantic import (
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    computed_field,
+    field_validator,
+)
 from pydantic_settings import BaseSettings
 
 
@@ -57,8 +63,8 @@ class ModalityConfigs(BaseSettings):
         title="Slurm Settings",
     )
 
-    @property
-    def default_output_folder_name(self):
+    @computed_field
+    def output_folder_name(self) -> str:
         """Construct the default folder name for the modality."""
         return self.modality.abbreviation
 
@@ -170,8 +176,8 @@ class BasicUploadJobConfigs(BaseSettings):
         title="Force Cloud Sync",
     )
 
-    @property
-    def s3_prefix(self):
+    @computed_field
+    def s3_prefix(self) -> str:
         """Construct s3_prefix from configs."""
         return build_data_name(
             label=f"{self.platform.abbreviation}_{self.subject_id}",
