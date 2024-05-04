@@ -10,8 +10,13 @@ from aind_data_schema.core.data_description import build_data_name
 from aind_data_schema.models.modalities import Modality
 from aind_data_schema.models.platforms import Platform
 from aind_slurm_rest import V0036JobSubmission
-from pydantic import ConfigDict, Field, ValidationInfo, field_validator, \
-    computed_field
+from pydantic import (
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    computed_field,
+    field_validator,
+)
 from pydantic_settings import BaseSettings
 
 

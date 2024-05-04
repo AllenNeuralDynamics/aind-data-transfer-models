@@ -86,7 +86,7 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
                 "s3_bucket": True,
                 "acq_datetime": True,
                 "s3_prefix": True,
-                "modalities": {"__all__": {"output_folder_name"}}
+                "modalities": {"__all__": {"output_folder_name"}},
             }
         )
 
@@ -105,11 +105,13 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
             acq_datetime=datetime(2020, 10, 13, 13, 10, 10),
             **self.base_configs,
         )
-        base_configs = open_configs.model_dump(exclude={
+        base_configs = open_configs.model_dump(
+            exclude={
                 "s3_bucket": True,
                 "s3_prefix": True,
-                "modalities": {"__all__": {"output_folder_name"}}
-            })
+                "modalities": {"__all__": {"output_folder_name"}},
+            }
+        )
         scratch_configs = BasicUploadJobConfigs(
             s3_bucket="scratch", **base_configs
         )
@@ -160,22 +162,26 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
     def test_parse_platform_string(self):
         """Tests that an error is raised if an unknown platform is used"""
 
-        base_configs = self.example_configs.model_dump(exclude={
+        base_configs = self.example_configs.model_dump(
+            exclude={
                 "platform": True,
                 "s3_prefix": True,
-                "modalities": {"__all__": {"output_folder_name"}}
-            })
+                "modalities": {"__all__": {"output_folder_name"}},
+            }
+        )
         configs = BasicUploadJobConfigs(platform="behavior", **base_configs)
         self.assertEqual(Platform.BEHAVIOR, configs.platform)
 
     def test_parse_platform_string_error(self):
         """Tests that an error is raised if an unknown platform is used"""
 
-        base_configs = self.example_configs.model_dump(exclude={
-            "platform": True,
-            "s3_prefix": True,
-            "modalities": {"__all__": {"output_folder_name"}}
-        })
+        base_configs = self.example_configs.model_dump(
+            exclude={
+                "platform": True,
+                "s3_prefix": True,
+                "modalities": {"__all__": {"output_folder_name"}},
+            }
+        )
 
         with self.assertRaises(AttributeError) as e:
             BasicUploadJobConfigs(platform="MISSING", **base_configs)
