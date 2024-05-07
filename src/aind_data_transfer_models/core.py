@@ -119,11 +119,6 @@ class BasicUploadJobConfigs(BaseSettings):
         r"^\d{1,2}/\d{1,2}/\d{4} \d{1,2}:\d{2}:\d{2} [APap][Mm]$"
     )
 
-    processor_full_name: str = Field(
-        ...,
-        description="Name of person uploading data",
-        title="Processor Full Name",
-    )
     project_name: str = Field(
         ..., description="Name of project", title="Project Name"
     )
