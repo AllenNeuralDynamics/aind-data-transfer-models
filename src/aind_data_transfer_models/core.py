@@ -6,9 +6,9 @@ from enum import Enum
 from pathlib import PurePosixPath
 from typing import Any, ClassVar, List, Optional, Union
 
-from aind_data_schema.core.data_description import build_data_name
-from aind_data_schema.models.modalities import Modality
-from aind_data_schema.models.platforms import Platform
+from aind_data_schema_models.data_name_patterns import build_data_name
+from aind_data_schema_models.modalities import Modality
+from aind_data_schema_models.platforms import Platform
 from aind_slurm_rest import V0036JobSubmission
 from pydantic import (
     ConfigDict,

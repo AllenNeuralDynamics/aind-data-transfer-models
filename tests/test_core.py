@@ -5,8 +5,8 @@ import unittest
 from datetime import datetime
 from pathlib import PurePosixPath
 
-from aind_data_schema.models.modalities import Modality
-from aind_data_schema.models.platforms import Platform
+from aind_data_schema_models.modalities import Modality
+from aind_data_schema_models.platforms import Platform
 from pydantic import ValidationError
 
 from aind_data_transfer_models.core import (
