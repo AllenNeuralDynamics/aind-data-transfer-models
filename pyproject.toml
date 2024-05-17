@@ -21,7 +21,6 @@ dependencies = [
     'pydantic-settings>=2.0',
     'aind-data-schema-models==0.1.1',
     'aind-slurm-rest==0.1.0',
-    'pyyaml'
 ]
 
 [project.optional-dependencies]
@@ -32,7 +31,8 @@ dev = [
     'interrogate',
     'isort',
     'Sphinx',
-    'furo'
+    'furo',
+    'pyyaml'
 ]
 
 [tool.setuptools.packages.find]
