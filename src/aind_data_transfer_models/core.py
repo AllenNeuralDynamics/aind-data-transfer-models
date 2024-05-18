@@ -4,7 +4,7 @@ import re
 from datetime import datetime
 from enum import Enum
 from pathlib import PurePosixPath
-from typing import Any, ClassVar, List, Optional, Union
+from typing import Any, ClassVar, List, Optional, Set, Union
 
 from aind_data_schema_models.data_name_patterns import build_data_name
 from aind_data_schema_models.modalities import Modality
@@ -12,12 +12,23 @@ from aind_data_schema_models.platforms import Platform
 from aind_slurm_rest import V0036JobSubmission
 from pydantic import (
     ConfigDict,
+    EmailStr,
     Field,
     ValidationInfo,
     computed_field,
     field_validator,
 )
 from pydantic_settings import BaseSettings
+
+
+class EmailNotificationType(str, Enum):
+    """Types of email notifications a user can select"""
+
+    BEGIN = "begin"
+    END = "end"
+    FAIL = "fail"
+    RETRY = "retry"
+    ALL = "all"
 
 
 class BucketType(str, Enum):
@@ -111,7 +122,6 @@ class BasicUploadJobConfigs(BaseSettings):
     _PLATFORM_MAP: ClassVar = {
         p().abbreviation.upper(): p().abbreviation for p in Platform._ALL
     }
-    _MODALITY_ENTRY_PATTERN: ClassVar = re.compile(r"^modality(\d*)$")
     _DATETIME_PATTERN1: ClassVar = re.compile(
         r"^\d{4}-\d{2}-\d{2}[ |T]\d{2}:\d{2}:\d{2}$"
     )
@@ -231,3 +241,24 @@ class BasicUploadJobConfigs(BaseSettings):
             )
         else:
             return datetime_val
+
+
+class SubmitJobRequest(BaseSettings):
+    """Main request that will be sent to the backend. Bundles jobs into a list
+    and allows a user to add an email address to receive notifications."""
+
+    user_email: Optional[EmailStr] = Field(
+        default=None,
+        description=(
+            "Optional email address to receive job status notifications"
+        ),
+    )
+    email_notification_types: Set[EmailNotificationType] = Field(
+        default={EmailNotificationType.FAIL},
+        description=(
+            "Types of job statuses to receive email notifications about"
+        ),
+    )
+    upload_jobs: List[BasicUploadJobConfigs] = Field(
+        ..., description="List of upload jobs to process"
+    )

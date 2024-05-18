@@ -12,7 +12,9 @@ from pydantic import ValidationError
 from aind_data_transfer_models.core import (
     BasicUploadJobConfigs,
     BucketType,
+    EmailNotificationType,
     ModalityConfigs,
+    SubmitJobRequest,
 )
 
 
@@ -64,7 +66,6 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
         """Set up test class"""
 
         example_configs = BasicUploadJobConfigs(
-            processor_full_name="Anna Apple",
             project_name="Behavior Platform",
             s3_bucket="some_bucket2",
             platform=Platform.BEHAVIOR,
@@ -186,6 +187,79 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
         with self.assertRaises(AttributeError) as e:
             BasicUploadJobConfigs(platform="MISSING", **base_configs)
         self.assertEqual("Unknown Platform: MISSING", e.exception.args[0])
+
+
+class TestSubmitJobRequest(unittest.TestCase):
+    """Tests SubmitJobRequest class"""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        """Set up example configs to be used in tests"""
+        example_upload_config = BasicUploadJobConfigs(
+            project_name="Behavior Platform",
+            s3_bucket="some_bucket2",
+            platform=Platform.BEHAVIOR,
+            modalities=[
+                ModalityConfigs(
+                    modality=Modality.BEHAVIOR_VIDEOS,
+                    source=(PurePosixPath("dir") / "data_set_2"),
+                ),
+            ],
+            subject_id="123456",
+            acq_datetime=datetime(2020, 10, 13, 13, 10, 10),
+        )
+        cls.example_upload_config = example_upload_config
+
+    def test_default_settings(self):
+        """Tests defaults are set correctly."""
+
+        job_settings = SubmitJobRequest(
+            upload_jobs=[self.example_upload_config]
+        )
+        self.assertIsNone(job_settings.user_email)
+        self.assertEqual(
+            {EmailNotificationType.FAIL}, job_settings.email_notification_types
+        )
+        self.assertEqual(
+            [self.example_upload_config], job_settings.upload_jobs
+        )
+
+    def test_non_default_settings(self):
+        """Tests user can modify the settings."""
+
+        job_settings = SubmitJobRequest(
+            user_email="abc@acme.com",
+            email_notification_types={
+                EmailNotificationType.BEGIN,
+                EmailNotificationType.FAIL,
+            },
+            upload_jobs=[self.example_upload_config],
+        )
+        self.assertEqual("abc@acme.com", job_settings.user_email)
+        self.assertEqual(
+            {EmailNotificationType.BEGIN, EmailNotificationType.FAIL},
+            job_settings.email_notification_types,
+        )
+        self.assertEqual(
+            [self.example_upload_config], job_settings.upload_jobs
+        )
+
+    def test_email_validation(self):
+        """Tests user can not input invalid email address."""
+
+        with self.assertRaises(ValidationError) as e:
+            SubmitJobRequest(
+                user_email="some user",
+                upload_jobs=[self.example_upload_config],
+            )
+        expected_error_message = (
+            "value is not a valid email address:"
+            " The email address is not valid. It must have exactly one @-sign."
+        )
+        actual_error_message = json.loads(e.exception.json())[0]["msg"]
+        # Check only 1 validation error is raised
+        self.assertEqual(1, len(json.loads(e.exception.json())))
+        self.assertEqual(expected_error_message, actual_error_message)
 
 
 if __name__ == "__main__":
