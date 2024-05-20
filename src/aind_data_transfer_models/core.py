@@ -180,9 +180,7 @@ class BasicUploadJobConfigs(BaseSettings):
         )
 
     @field_validator("s3_bucket", mode="before")
-    def map_bucket(
-        cls, bucket: Optional[Union[BucketType, str]]
-    ) -> BucketType:
+    def map_bucket(cls, bucket: Optional[Union[BucketType, str]]) -> BucketType:
         """We're adding a policy that data uploaded through the service can
         only land in a handful of buckets. As default, things will be
         stored in the private bucket"""

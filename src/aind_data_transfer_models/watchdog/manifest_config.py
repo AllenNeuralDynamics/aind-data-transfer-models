@@ -9,8 +9,7 @@ from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
 class ManifestConfig(BaseModel):
-    """Configuration for session:
-    based on engineerings lims_scheduler_d manifest files"""
+    """Configuration for session: based on engineerings lims_scheduler_d manifest files"""
 
     model_config = ConfigDict(extra="forbid")
     name: str = Field(
@@ -28,7 +27,10 @@ class ManifestConfig(BaseModel):
     )
     schedule_time: Optional[datetime] = Field(
         default=None,
-        description="Transfer time to schedule copy and upload. If None defaults to trigger the transfer immediately",  # noqa
+        description=(
+            "Transfer time to schedule copy and upload."
+            "If None defaults to trigger the transfer immediately"
+        ),
         title="APScheduler transfer time",
     )
     platform: str = Field(description="Platform type", title="Platform type")
@@ -42,8 +44,8 @@ class ManifestConfig(BaseModel):
         ..., description="Project name", title="Project name"
     )
 
-    destination: str = Field(
-        ...,
+    destination: Optional[str] = Field(
+        default=None,
         description="where to send data to on VAST",
         title="VAST destination and maybe S3?",
     )
