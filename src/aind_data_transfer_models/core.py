@@ -17,6 +17,7 @@ from pydantic import (
     ValidationInfo,
     computed_field,
     field_validator,
+    model_validator,
 )
 from pydantic_settings import BaseSettings
 
@@ -114,8 +115,7 @@ class ModalityConfigs(BaseSettings):
 class BasicUploadJobConfigs(BaseSettings):
     """Configuration for the basic upload job"""
 
-    # Allow users to pass in extra fields
-    model_config = ConfigDict(extra="allow", use_enum_values=True)
+    model_config = ConfigDict(use_enum_values=True)
 
     # Need some way to extract abbreviations. Maybe a public method can be
     # added to the Platform class
@@ -127,6 +127,20 @@ class BasicUploadJobConfigs(BaseSettings):
     )
     _DATETIME_PATTERN2: ClassVar = re.compile(
         r"^\d{1,2}/\d{1,2}/\d{4} \d{1,2}:\d{2}:\d{2} [APap][Mm]$"
+    )
+
+    user_email: Optional[EmailStr] = Field(
+        default=None,
+        description=(
+            "Optional email address to receive job status notifications"
+        ),
+    )
+
+    email_notification_types: Optional[Set[EmailNotificationType]] = Field(
+        default=None,
+        description=(
+            "Types of job statuses to receive email notifications about"
+        ),
     )
 
     project_name: str = Field(
@@ -247,6 +261,8 @@ class SubmitJobRequest(BaseSettings):
     """Main request that will be sent to the backend. Bundles jobs into a list
     and allows a user to add an email address to receive notifications."""
 
+    model_config = ConfigDict(use_enum_values=True)
+
     user_email: Optional[EmailStr] = Field(
         default=None,
         description=(
@@ -260,5 +276,22 @@ class SubmitJobRequest(BaseSettings):
         ),
     )
     upload_jobs: List[BasicUploadJobConfigs] = Field(
-        ..., description="List of upload jobs to process"
+        ...,
+        description="List of upload jobs to process. Max of 1000 at a time.",
+        min_items=1,
+        max_items=1000,
     )
+
+    @model_validator(mode="after")
+    def propagate_email_settings(self):
+        """Propagate email settings from global to individual jobs"""
+        global_email_user = self.user_email
+        global_email_notification_types = self.email_notification_types
+        for upload_job in self.upload_jobs:
+            if global_email_user is not None and upload_job.user_email is None:
+                upload_job.user_email = global_email_user
+            if upload_job.email_notification_types is None:
+                upload_job.email_notification_types = (
+                    global_email_notification_types
+                )
+        return self
