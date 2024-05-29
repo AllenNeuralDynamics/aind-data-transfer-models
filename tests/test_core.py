@@ -161,7 +161,7 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
         self.assertTrue("Value error, Incorrect datetime format" in error_msg)
 
     def test_parse_platform_string(self):
-        """Tests that an error is raised if an unknown platform is used"""
+        """Tests platform can be parsed from string"""
 
         base_configs = self.example_configs.model_dump(
             exclude={
@@ -210,22 +210,52 @@ class TestSubmitJobRequest(unittest.TestCase):
         )
         cls.example_upload_config = example_upload_config
 
+    def test_min_items(self):
+        """Tests error is raised if no job list is empty"""
+
+        with self.assertRaises(ValidationError) as e:
+            SubmitJobRequest(upload_jobs=[])
+        expected_message = (
+            "List should have at least 1 item after validation, not 0"
+        )
+        actual_message = json.loads(e.exception.json())[0]["msg"]
+        self.assertEqual(1, len(json.loads(e.exception.json())))
+        self.assertEqual(expected_message, actual_message)
+
+    def test_max_items(self):
+        """Tests error is raised if job list is greater than maximum allowed"""
+
+        upload_job = BasicUploadJobConfigs(
+            **self.example_upload_config.model_dump(round_trip=True)
+        )
+
+        with self.assertRaises(ValidationError) as e:
+            SubmitJobRequest(upload_jobs=[upload_job for _ in range(0, 1001)])
+        expected_message = (
+            "List should have at most 1000 items after validation, not 1001"
+        )
+        actual_message = json.loads(e.exception.json())[0]["msg"]
+        self.assertEqual(1, len(json.loads(e.exception.json())))
+        self.assertEqual(expected_message, actual_message)
+
     def test_default_settings(self):
         """Tests defaults are set correctly."""
 
-        job_settings = SubmitJobRequest(
-            upload_jobs=[self.example_upload_config]
+        upload_job = BasicUploadJobConfigs(
+            **self.example_upload_config.model_dump(round_trip=True)
         )
+
+        job_settings = SubmitJobRequest(upload_jobs=[upload_job])
         self.assertIsNone(job_settings.user_email)
         self.assertEqual(
             {EmailNotificationType.FAIL}, job_settings.email_notification_types
         )
-        self.assertEqual(
-            [self.example_upload_config], job_settings.upload_jobs
-        )
 
     def test_non_default_settings(self):
         """Tests user can modify the settings."""
+        upload_job_configs = self.example_upload_config.model_dump(
+            round_trip=True
+        )
 
         job_settings = SubmitJobRequest(
             user_email="abc@acme.com",
@@ -233,24 +263,24 @@ class TestSubmitJobRequest(unittest.TestCase):
                 EmailNotificationType.BEGIN,
                 EmailNotificationType.FAIL,
             },
-            upload_jobs=[self.example_upload_config],
+            upload_jobs=[BasicUploadJobConfigs(**upload_job_configs)],
         )
         self.assertEqual("abc@acme.com", job_settings.user_email)
         self.assertEqual(
             {EmailNotificationType.BEGIN, EmailNotificationType.FAIL},
             job_settings.email_notification_types,
         )
-        self.assertEqual(
-            [self.example_upload_config], job_settings.upload_jobs
-        )
 
     def test_email_validation(self):
         """Tests user can not input invalid email address."""
 
+        upload_job_configs = self.example_upload_config.model_dump(
+            round_trip=True
+        )
         with self.assertRaises(ValidationError) as e:
             SubmitJobRequest(
                 user_email="some user",
-                upload_jobs=[self.example_upload_config],
+                upload_jobs=[BasicUploadJobConfigs(**upload_job_configs)],
             )
         expected_error_message = (
             "value is not a valid email address:"
@@ -260,6 +290,43 @@ class TestSubmitJobRequest(unittest.TestCase):
         # Check only 1 validation error is raised
         self.assertEqual(1, len(json.loads(e.exception.json())))
         self.assertEqual(expected_error_message, actual_error_message)
+
+    def test_propagate_email_settings(self):
+        """Tests global email settings is propagated to individual jobs."""
+
+        example_job_configs = self.example_upload_config.model_dump(
+            exclude={"user_email", "email_notification_types"}, round_trip=True
+        )
+        new_job = BasicUploadJobConfigs(
+            user_email="xyz@acme.org",
+            email_notification_types=[EmailNotificationType.ALL],
+            **example_job_configs,
+        )
+        job_settings = SubmitJobRequest(
+            user_email="abc@acme.org",
+            email_notification_types={
+                EmailNotificationType.BEGIN,
+                EmailNotificationType.FAIL,
+            },
+            upload_jobs=[
+                new_job,
+                BasicUploadJobConfigs(**example_job_configs),
+            ],
+        )
+
+        self.assertEqual(
+            "xyz@acme.org", job_settings.upload_jobs[0].user_email
+        )
+        self.assertEqual(
+            "abc@acme.org", job_settings.upload_jobs[1].user_email
+        )
+        self.assertEqual(
+            {"all"}, job_settings.upload_jobs[0].email_notification_types
+        )
+        self.assertEqual(
+            {"begin", "fail"},
+            job_settings.upload_jobs[1].email_notification_types,
+        )
 
 
 if __name__ == "__main__":
