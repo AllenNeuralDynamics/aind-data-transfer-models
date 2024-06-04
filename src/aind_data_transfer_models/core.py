@@ -146,6 +146,11 @@ class BasicUploadJobConfigs(BaseSettings):
     project_name: str = Field(
         ..., description="Name of project", title="Project Name"
     )
+    input_data_mount: Optional[str] = Field(
+        default=None,
+        description="Input mount if user defines process_capsule_id",
+        title="Input Data Mount",
+    )
     process_capsule_id: Optional[str] = Field(
         None,
         description="Use custom codeocean capsule or pipeline id",
