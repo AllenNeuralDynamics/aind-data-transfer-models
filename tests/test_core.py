@@ -7,6 +7,7 @@ from pathlib import PurePosixPath
 
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.platforms import Platform
+from aind_slurm_rest import V0036JobProperties
 from pydantic import ValidationError
 
 from aind_data_transfer_models.core import (
@@ -56,6 +57,32 @@ class TestModalityConfigs(unittest.TestCase):
         self.assertTrue(configs1.compress_raw_data)
         self.assertFalse(configs2.compress_raw_data)
         self.assertTrue(configs3.compress_raw_data)
+
+    def test_slurm_settings(self):
+        """Tests slurm settings"""
+
+        slurm_settings_for_ephys_modality = V0036JobProperties(
+            # "environment" is a required field, but will be created by a
+            # downstream process if blank here
+            environment=dict(),
+            memory_per_cpu=8000,
+            tasks=1,
+            time_limit=720,
+            nodes=[1, 1],
+            minimum_cpus_per_node=16,
+        )
+
+        configs = ModalityConfigs(
+            modality=Modality.ECEPHYS,
+            source="some_dir",
+            slurm_settings=slurm_settings_for_ephys_modality,
+        )
+
+        self.assertEqual(8000, configs.slurm_settings.memory_per_cpu)
+        self.assertEqual(1, configs.slurm_settings.tasks)
+        self.assertEqual(720, configs.slurm_settings.time_limit)
+        self.assertEqual([1, 1], configs.slurm_settings.nodes)
+        self.assertEqual(16, configs.slurm_settings.minimum_cpus_per_node)
 
 
 class TestBasicUploadJobConfigs(unittest.TestCase):

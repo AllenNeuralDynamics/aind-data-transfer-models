@@ -9,7 +9,7 @@ from typing import Any, ClassVar, List, Optional, Set, Union
 from aind_data_schema_models.data_name_patterns import build_data_name
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.platforms import Platform
-from aind_slurm_rest import V0036JobSubmission
+from aind_slurm_rest import V0036JobProperties
 from pydantic import (
     ConfigDict,
     EmailStr,
@@ -69,9 +69,13 @@ class ModalityConfigs(BaseSettings):
         description="Location of additional configuration file",
         title="Extra Configs",
     )
-    slurm_settings: Optional[V0036JobSubmission] = Field(
+    slurm_settings: Optional[V0036JobProperties] = Field(
         default=None,
-        description="Custom slurm submission script to use",
+        description=(
+            "Custom slurm job properties. `environment` is a required field. "
+            "Please set it to an empty dictionary. A downstream process will "
+            "overwrite it."
+        ),
         title="Slurm Settings",
     )
 
