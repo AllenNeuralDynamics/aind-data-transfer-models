@@ -8,7 +8,7 @@ from aind_data_transfer_models.trigger import TriggerConfigModel
 class TestTriggerConfigModel(unittest.TestCase):
     """Tests TestTriggerConfigModel class"""
 
-    def test_ecephys_upload_and_run(self):
+    def test_upload_and_run(self):
         """Test default_output_folder_name property"""
         config = TriggerConfigModel(
             job_type="ecephys",
@@ -28,6 +28,21 @@ class TestTriggerConfigModel(unittest.TestCase):
         self.assertEqual(config.prefix, "ecephys_0000")
         self.assertEqual(config.asset_name, "ecephys_0000")
         self.assertEqual(config.mount, "ecephys_0000")
+
+        # passing upload info and input data asset id should fail
+        with self.assertRaises(ValueError):
+            config = TriggerConfigModel(
+                job_type="ecephys",
+                bucket="my-bucket",
+                prefix="ecephys_0000",
+                asset_name=None,
+                mount=None,
+                input_data_asset_id="0101",
+                input_data_mount=None,
+                process_capsule_id=None,
+                capsule_version=None,
+                results_suffix="processed",
+            )
 
     def test_multiple_assets(self):
         """Test default behavior with multiple assets"""
