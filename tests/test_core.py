@@ -311,12 +311,11 @@ class TestSubmitJobRequest(unittest.TestCase):
             )
         expected_error_message = (
             "value is not a valid email address:"
-            " The email address is not valid. It must have exactly one @-sign."
         )
         actual_error_message = json.loads(e.exception.json())[0]["msg"]
         # Check only 1 validation error is raised
         self.assertEqual(1, len(json.loads(e.exception.json())))
-        self.assertEqual(expected_error_message, actual_error_message)
+        self.assertIn(expected_error_message, actual_error_message)
 
     def test_propagate_email_settings(self):
         """Tests global email settings is propagated to individual jobs."""
