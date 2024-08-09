@@ -4,6 +4,8 @@ from enum import Enum
 from typing import List, Optional, Union
 from typing_extensions import Self
 
+from aind_data_schema_models.modalities import Modality
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
