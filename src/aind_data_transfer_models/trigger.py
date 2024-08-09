@@ -4,8 +4,6 @@ from enum import Enum
 from typing import List, Optional, Union
 from typing_extensions import Self
 
-from aind_data_schema_models.modalities import Modality
-
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
@@ -99,7 +97,7 @@ class TriggerConfigModel(BaseModel):
         description="The version of the AIND Data Transfer Capsule.",
         default=None,
     )
-    modalities: Optional[List[Modality]] = Field(
+    modalities: Optional[List[str]] = Field(
         description=("(deprecated - use 'job_type')."),
         default=None,
     )
