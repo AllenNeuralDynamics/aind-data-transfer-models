@@ -152,9 +152,7 @@ class TriggerConfigModel(BaseModel):
                         "input_data_mount should be a list if "
                         "input_data_asset_id is a list."
                     )
-                if len(self.input_data_asset_id) != len(
-                    self.input_data_mount
-                ):
+                if len(self.input_data_asset_id) != len(self.input_data_mount):
                     raise ValueError(
                         "input_data_asset_id and input_data_mount should "
                         "have the same length when multiple input data "
