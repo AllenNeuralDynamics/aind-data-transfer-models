@@ -2,6 +2,7 @@
 
 import unittest
 
+from aind_data_schema_models.modalities import Modality
 from aind_data_transfer_models.trigger import TriggerConfigModel
 
 
