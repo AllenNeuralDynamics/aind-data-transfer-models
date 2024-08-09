@@ -309,9 +309,14 @@ class TestSubmitJobRequest(unittest.TestCase):
                 user_email="some user",
                 upload_jobs=[BasicUploadJobConfigs(**upload_job_configs)],
             )
+        # email_validator changed error message across versions. We can just
+        # do a quick check that the error message at least contains this part.
         expected_error_message = (
             "value is not a valid email address: "
+<<<<<<< HEAD
             "An email address must have an @-sign."
+=======
+>>>>>>> bd0f77007c76500df902bcc20b14e8b2284d8bbf
         )
         actual_error_message = json.loads(e.exception.json())[0]["msg"]
         # Check only 1 validation error is raised
