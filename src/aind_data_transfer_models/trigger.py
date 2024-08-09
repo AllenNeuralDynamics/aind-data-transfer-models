@@ -73,18 +73,14 @@ class TriggerConfigModel(BaseModel):
         default=None,
     )
 
-    capsule_version: Optional[str] = (
-        Field(
-            description="The version of the capsule.",
-            default=None,
-        ),
+    capsule_version: Optional[str] = Field(
+        description="The version of the capsule.",
+        default=None,
     )
 
-    results_suffix: Optional[str] = (
-        Field(
-            description="The suffix to be added to the results.",
-            default="processed",
-        ),
+    results_suffix: Optional[str] = Field(
+        description="The suffix to be added to the results.",
+        default="processed",
     )
 
     input_data_asset_name: Optional[str] = Field(
