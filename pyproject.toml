@@ -21,6 +21,7 @@ dependencies = [
     'pydantic-settings>=2.0',
     'aind-slurm-rest==0.1.0',
     'aind-data-schema-models>=0.1.1',
+    'aind-metadata-mapper<=0.14.0',
     'email-validator'
 ]
 

@@ -20,7 +20,7 @@ from pydantic import (
     model_validator,
 )
 from pydantic_settings import BaseSettings
-
+from aind_metadata_mapper.gather_metadata import JobSettings as GatherMetadataJobSettings
 
 class EmailNotificationType(str, Enum):
     """Types of email notifications a user can select"""
@@ -78,6 +78,7 @@ class ModalityConfigs(BaseSettings):
         ),
         title="Slurm Settings",
     )
+
 
     @computed_field
     def output_folder_name(self) -> str:
@@ -203,6 +204,11 @@ class BasicUploadJobConfigs(BaseSettings):
         ),
         title="Force Cloud Sync",
     )
+    metadata_configs: Optional[GatherMetadataJobSettings] = Field(
+        default=None,
+        description="Settings for gather metadata job",
+        title="Metadata Configs",
+    )
 
     @computed_field
     def s3_prefix(self) -> str:
@@ -265,6 +271,20 @@ class BasicUploadJobConfigs(BaseSettings):
         else:
             return datetime_val
 
+    @field_validator("metadata_configs", mode="after")
+    def fill_in_metadata_configs(cls, input_metadata_configs:GatherMetadataJobSettings):
+        """Fills in settings for gather metadata job"""
+        if input_metadata_configs:
+            if getattr(input_metadata_configs, "metadata_dir") is None:
+                input_metadata_configs.metadata_dir = cls.metadata_dir
+            if getattr(input_metadata_configs, "directory_to_write_to") is None:
+                input_metadata_configs.directory_to_write_to = "stage"
+            if getattr(input_metadata_configs, "subject_settings") and getattr(input_metadata_configs.subject_settings.subject_id) is None:
+                input_metadata_configs.subject_settings.subject_id = cls.subject_id
+            if getattr(input_metadata_configs, "acquisition_settings") and getattr(input_metadata_configs.acquisition_settings.job_settings.subject_id) is None:
+                input_metadata_configs.acquisition_settings.job_settings.subject_id = cls.subject_id
+            if getattr(input_metadata_configs, "procedures_settings") and getattr(input_metadata_configs.procedures_settings.subject_id) is None:
+                input_metadata_configs.procedures_settings.subject_id = cls.subject_id
 
 class SubmitJobRequest(BaseSettings):
     """Main request that will be sent to the backend. Bundles jobs into a list
