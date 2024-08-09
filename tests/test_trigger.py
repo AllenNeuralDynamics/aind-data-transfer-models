@@ -77,7 +77,7 @@ class TestTriggerConfigModel(unittest.TestCase):
             config = TriggerConfigModel(
                 job_type="ecephys",
                 input_data_asset_id="0000;0001",
-                input_data_mount="mount1",
+                input_data_mount="mount1;mount2;mount3",
                 input_data_asset_name="ecephys_session",
             )
 
