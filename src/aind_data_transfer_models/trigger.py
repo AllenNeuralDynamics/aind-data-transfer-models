@@ -139,18 +139,20 @@ class TriggerConfigModel(BaseModel):
         # input data asset ids, mounts, and names
         if self.input_data_asset_id is not None:
             if isinstance(self.input_data_asset_id, str):
-                self.input_data_asset_id = self.input_data_asset_id.split(";")
+                if ";" in self.input_data_asset_id:
+                    self.input_data_asset_id = self.input_data_asset_id.split(
+                        ";"
+                    )
             if self.input_data_mount is not None:
-                self.input_data_mount = self.input_data_mount.split(";")
+                if ";" in self.input_data_mount:
+                    self.input_data_mount = self.input_data_mount.split(";")
             if isinstance(self.input_data_asset_id, list):
                 if not isinstance(self.input_data_mount, list):
                     raise ValueError(
                         "input_data_mount should be a list if "
                         "input_data_asset_id is a list."
                     )
-                if len(self.input_data_asset_id) != len(
-                    self.input_data_mount
-                ):
+                if len(self.input_data_asset_id) != len(self.input_data_mount):
                     raise ValueError(
                         "input_data_asset_id and input_data_mount should "
                         "have the same length when multiple input data "
