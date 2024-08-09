@@ -313,6 +313,7 @@ class TestSubmitJobRequest(unittest.TestCase):
         # do a quick check that the error message at least contains this part.
         expected_error_message = (
             "value is not a valid email address: "
+            "An email address must have an @-sign."
         )
         actual_error_message = json.loads(e.exception.json())[0]["msg"]
         # Check only 1 validation error is raised

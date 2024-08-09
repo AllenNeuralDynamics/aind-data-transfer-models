@@ -73,18 +73,14 @@ class TriggerConfigModel(BaseModel):
         default=None,
     )
 
-    capsule_version: Optional[str] = (
-        Field(
-            description="The version of the capsule.",
-            default=None,
-        ),
+    capsule_version: Optional[str] = Field(
+        description="The version of the capsule.",
+        default=None,
     )
 
-    results_suffix: Optional[str] = (
-        Field(
-            description="The suffix to be added to the results.",
-            default="processed",
-        ),
+    results_suffix: Optional[str] = Field(
+        description="The suffix to be added to the results.",
+        default="processed",
     )
 
     input_data_asset_name: Optional[str] = Field(
@@ -99,7 +95,7 @@ class TriggerConfigModel(BaseModel):
         description="The version of the AIND Data Transfer Capsule.",
         default=None,
     )
-    modalities: Optional[List[Modality]] = Field(
+    modalities: Optional[List[Modality.ONE_OF]] = Field(
         description=("(deprecated - use 'job_type')."),
         default=None,
     )
