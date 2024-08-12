@@ -1,7 +1,9 @@
 """Module to test trigger"""
 
 import unittest
+from pydantic import ValidationError
 
+from aind_data_schema_models.modalities import ModalityModel, Modality
 from aind_data_transfer_models.trigger import TriggerConfigModel
 
 
@@ -79,6 +81,44 @@ class TestTriggerConfigModel(unittest.TestCase):
                 input_data_asset_id="0000;0001",
                 input_data_mount="mount1;mount2;mount3",
                 input_data_asset_name="ecephys_session",
+            )
+
+    def test_modalities_parsing(self):
+        """Test modalities field"""
+        config = TriggerConfigModel(
+            job_type="run_generic_pipeline",
+            process_capsule_id="0000",
+            capsule_version="1.0",
+            modalities=["ecephys", "fib"],
+        )
+        for m in config.modalities:
+            self.assertIsInstance(m, ModalityModel)
+
+        config = TriggerConfigModel(
+            job_type="run_generic_pipeline",
+            process_capsule_id="0000",
+            capsule_version="1.0",
+            modalities=[Modality.ECEPHYS, Modality.FIB],
+        )
+        for m in config.modalities:
+            self.assertIsInstance(m, ModalityModel)
+
+        # wrong modality type
+        with self.assertRaises(ValidationError):
+            config = TriggerConfigModel(
+                job_type="run_generic_pipeline",
+                process_capsule_id="0000",
+                capsule_version="1.0",
+                modalities=[1, 2],
+            )
+
+        # wrong modality abbreviation
+        with self.assertRaises(ValidationError):
+            config = TriggerConfigModel(
+                job_type="run_generic_pipeline",
+                process_capsule_id="0000",
+                capsule_version="1.0",
+                modalities=["ecpys", "fibb"],
             )
 
     def test_run_generic_pipeline(self):

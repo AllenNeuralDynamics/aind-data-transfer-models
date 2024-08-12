@@ -6,7 +6,13 @@ from typing_extensions import Self
 
 from aind_data_schema_models.modalities import Modality
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    model_validator,
+    field_validator,
+)
 
 
 class ValidJobType(str, Enum):
@@ -112,6 +118,20 @@ class TriggerConfigModel(BaseModel):
         ),
         default=None,
     )
+
+    @field_validator("modalities", mode="before")
+    def validate_modalities(
+        cls, modalities_before
+    ) -> Union[List[Modality.ONE_OF], None]:
+        if isinstance(modalities_before, list):
+            if len(modalities_before) == 0:
+                return None
+            elif isinstance(modalities_before[0], str):
+                return [
+                    Modality.from_abbreviation(modality)
+                    for modality in modalities_before
+                ]
+        return modalities_before
 
     @model_validator(mode="after")
     def validate_trigger_config(self) -> Self:  # noqa
