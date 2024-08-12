@@ -103,6 +103,15 @@ class TestTriggerConfigModel(unittest.TestCase):
         for m in config.modalities:
             self.assertIsInstance(m, ModalityModel)
 
+        # emtpy list will set modality to None
+        config = TriggerConfigModel(
+            job_type="run_generic_pipeline",
+            process_capsule_id="0000",
+            capsule_version="1.0",
+            modalities=[],
+        )
+        self.assertEqual(config.modalities, None)
+
         # wrong modality type
         with self.assertRaises(ValidationError):
             config = TriggerConfigModel(
