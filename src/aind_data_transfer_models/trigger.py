@@ -123,6 +123,7 @@ class TriggerConfigModel(BaseModel):
     def validate_modalities(
         cls, modalities_before
     ) -> Union[List[Modality.ONE_OF], None]:
+        """Convert str modalities to Modality objects."""
         if isinstance(modalities_before, list):
             if len(modalities_before) == 0:
                 return None
