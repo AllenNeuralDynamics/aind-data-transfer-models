@@ -130,7 +130,7 @@ class BasicUploadJobConfigs(BaseSettings):
     # Need some way to extract abbreviations. Maybe a public method can be
     # added to the Platform class
     _PLATFORM_MAP: ClassVar = {
-        p().abbreviation.upper(): p().abbreviation for p in Platform.ALL
+        p().abbreviation.upper(): p().abbreviation for p in Platform._ALL
     }
     _DATETIME_PATTERN1: ClassVar = re.compile(
         r"^\d{4}-\d{2}-\d{2}[ |T]\d{2}:\d{2}:\d{2}$"
