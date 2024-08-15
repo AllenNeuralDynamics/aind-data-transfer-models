@@ -10,12 +10,10 @@ from aind_data_schema_models.data_name_patterns import build_data_name
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.platforms import Platform
 from aind_metadata_mapper.models import (
-    JobSettings as GatherMetadataJobSettings,
-)
-from aind_metadata_mapper.models import (
     ProceduresSettings,
     RawDataDescriptionSettings,
     SubjectSettings,
+    JobSettings as GatherMetadataJobSettings,
 )
 from aind_slurm_rest import V0036JobProperties
 from pydantic import (
