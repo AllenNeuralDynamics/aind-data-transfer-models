@@ -7,6 +7,11 @@ from pathlib import PurePosixPath
 
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.platforms import Platform
+from aind_metadata_mapper.models import (
+    ProceduresSettings,
+    SubjectSettings,
+    JobSettings as GatherMetadataJobSettings,
+)
 from aind_slurm_rest import V0036JobProperties
 from pydantic import ValidationError
 
@@ -17,13 +22,7 @@ from aind_data_transfer_models.core import (
     ModalityConfigs,
     SubmitJobRequest,
 )
-from aind_metadata_mapper.models import (
-    SessionSettings,
-    JobSettings as GatherMetadataJobSettings,
-)
-from aind_metadata_mapper.bergamo.models import (
-    JobSettings as BergamoSessionJobSettings,
-)
+from aind_data_schema_models.modalities import BehaviorVideos
 
 
 class TestModalityConfigs(unittest.TestCase):
@@ -245,6 +244,20 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
         self.assertEqual(
             configs.metadata_configs.raw_data_description_settings.name,
             configs.s3_prefix,
+        )
+        self.assertEqual(
+            configs.metadata_configs.raw_data_description_settings.modality,
+            [
+                BehaviorVideos(
+                    name="Behavior videos", abbreviation="behavior-videos"
+                )
+            ],
+        )
+        self.assertIsInstance(
+            configs.metadata_configs.procedures_settings, ProceduresSettings
+        )
+        self.assertIsInstance(
+            configs.metadata_configs.subject_settings, SubjectSettings
         )
 
 

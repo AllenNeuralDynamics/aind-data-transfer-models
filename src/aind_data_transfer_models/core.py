@@ -9,6 +9,14 @@ from typing import Any, ClassVar, List, Optional, Set, Union
 from aind_data_schema_models.data_name_patterns import build_data_name
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.platforms import Platform
+from aind_metadata_mapper.models import (
+    JobSettings as GatherMetadataJobSettings,
+)
+from aind_metadata_mapper.models import (
+    ProceduresSettings,
+    RawDataDescriptionSettings,
+    SubjectSettings,
+)
 from aind_slurm_rest import V0036JobProperties
 from pydantic import (
     ConfigDict,
@@ -20,12 +28,6 @@ from pydantic import (
     model_validator,
 )
 from pydantic_settings import BaseSettings
-from aind_metadata_mapper.models import (
-    SubjectSettings,
-    ProceduresSettings,
-    RawDataDescriptionSettings,
-    JobSettings as GatherMetadataJobSettings,
-)
 
 
 class EmailNotificationType(str, Enum):
