@@ -20,7 +20,10 @@ from pydantic import (
     model_validator,
 )
 from pydantic_settings import BaseSettings
-from aind_metadata_mapper.gather_metadata import (
+from aind_metadata_mapper.models import (
+    SubjectSettings,
+    ProceduresSettings,
+    RawDataDescriptionSettings,
     JobSettings as GatherMetadataJobSettings,
 )
 
@@ -273,59 +276,40 @@ class BasicUploadJobConfigs(BaseSettings):
         else:
             return datetime_val
 
-    @field_validator("metadata_configs", mode="after")
-    def fill_in_metadata_configs(
-        cls, input_metadata_configs: GatherMetadataJobSettings
-    ):
+    @model_validator(mode="after")
+    def fill_in_metadata_configs(self) -> "BasicUploadJobConfigs":
         """Fills in settings for gather metadata job"""
+        input_metadata_configs = self.metadata_configs
+
         if input_metadata_configs:
-            if not getattr(input_metadata_configs, "metadata_dir", None):
-                input_metadata_configs.metadata_dir = cls.metadata_dir
-            if not getattr(
-                input_metadata_configs, "directory_to_write_to", None
-            ):
-                input_metadata_configs.directory_to_write_to = "stage"
-            if getattr(
-                input_metadata_configs, "subject_settings", None
-            ) and not getattr(
-                input_metadata_configs.subject_settings, "subject_id", None
-            ):
-                input_metadata_configs.subject_settings.subject_id = (
-                    cls.subject_id
+            input_metadata_configs.directory_to_write_to = "stage"
+
+            if input_metadata_configs.metadata_dir is None:
+                input_metadata_configs.metadata_dir = self.metadata_dir
+
+            if input_metadata_configs.subject_settings is None:
+                subject_settings = SubjectSettings(subject_id=self.subject_id)
+                input_metadata_configs.subject_settings = subject_settings
+
+            if input_metadata_configs.procedures_settings is None:
+                procedures_settings = ProceduresSettings(
+                    subject_id=self.subject_id
                 )
-            if (
-                getattr(input_metadata_configs, "acquisition_settings", None)
-                and getattr(
-                    input_metadata_configs.acquisition_settings,
-                    "job_settings",
-                    None,
+                input_metadata_configs.procedures_settings = (
+                    procedures_settings
                 )
-                and not getattr(
-                    input_metadata_configs.acquisition_settings.job_settings,
-                    "subject_id",
-                    None,
+
+            if input_metadata_configs.raw_data_description_settings is None:
+                raw_data_description_settings = RawDataDescriptionSettings(
+                    name=self.s3_prefix,
+                    project_name=self.project_name,
+                    modality=[mod.modality for mod in self.modalities],
                 )
-            ):
-                input_metadata_configs.acquisition_settings.job_settings.subject_id = (
-                    cls.subject_id
+                input_metadata_configs.raw_data_description_settings = (
+                    raw_data_description_settings
                 )
-            if getattr(
-                input_metadata_configs, "procedures_settings", None
-            ) and not getattr(
-                input_metadata_configs.procedures_settings, "subject_id", None
-            ):
-                input_metadata_configs.procedures_settings.subject_id = (
-                    cls.subject_id
-                )
-            if getattr(
-                input_metadata_configs, "session_settings", None
-            ) and not getattr(
-                input_metadata_configs.session_settings, "subject_id", None
-            ):
-                input_metadata_configs.session_settings.subject_id = (
-                    cls.subject_id
-                )
-        return input_metadata_configs
+
+        return self
 
 
 class SubmitJobRequest(BaseSettings):
