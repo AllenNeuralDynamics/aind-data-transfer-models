@@ -2,10 +2,17 @@
 
 from enum import Enum
 from typing import List, Optional, Union
+from typing_extensions import Self
 
 from aind_data_schema_models.modalities import Modality
-from pydantic import BaseModel, ConfigDict, Field, model_validator
-from typing_extensions import Self
+
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    model_validator,
+    field_validator,
+)
 
 
 class ValidJobType(str, Enum):
@@ -72,18 +79,14 @@ class TriggerConfigModel(BaseModel):
         default=None,
     )
 
-    capsule_version: Optional[str] = (
-        Field(
-            description="The version of the capsule.",
-            default=None,
-        ),
+    capsule_version: Optional[str] = Field(
+        description="The version of the capsule.",
+        default=None,
     )
 
-    results_suffix: Optional[str] = (
-        Field(
-            description="The suffix to be added to the results.",
-            default="processed",
-        ),
+    results_suffix: Optional[str] = Field(
+        description="The suffix to be added to the results.",
+        default="processed",
     )
 
     input_data_asset_name: Optional[str] = Field(
@@ -98,7 +101,7 @@ class TriggerConfigModel(BaseModel):
         description="The version of the AIND Data Transfer Capsule.",
         default=None,
     )
-    modalities: Optional[List[Modality]] = Field(
+    modalities: Optional[List[Modality.ONE_OF]] = Field(
         description=("(deprecated - use 'job_type')."),
         default=None,
     )
@@ -115,6 +118,21 @@ class TriggerConfigModel(BaseModel):
         ),
         default=None,
     )
+
+    @field_validator("modalities", mode="before")
+    def validate_modalities(
+        cls, modalities_before
+    ) -> Union[List[Modality.ONE_OF], None]:
+        """Convert str modalities to Modality objects."""
+        if isinstance(modalities_before, list):
+            if len(modalities_before) == 0:
+                return None
+            elif isinstance(modalities_before[0], str):
+                return [
+                    Modality.from_abbreviation(modality)
+                    for modality in modalities_before
+                ]
+        return modalities_before
 
     @model_validator(mode="after")
     def validate_trigger_config(self) -> Self:  # noqa
@@ -142,9 +160,13 @@ class TriggerConfigModel(BaseModel):
         # input data asset ids, mounts, and names
         if self.input_data_asset_id is not None:
             if isinstance(self.input_data_asset_id, str):
-                self.input_data_asset_id = self.input_data_asset_id.split(";")
+                if ";" in self.input_data_asset_id:
+                    self.input_data_asset_id = self.input_data_asset_id.split(
+                        ";"
+                    )
             if self.input_data_mount is not None:
-                self.input_data_mount = self.input_data_mount.split(";")
+                if ";" in self.input_data_mount:
+                    self.input_data_mount = self.input_data_mount.split(";")
             if isinstance(self.input_data_asset_id, list):
                 if not isinstance(self.input_data_mount, list):
                     raise ValueError(
