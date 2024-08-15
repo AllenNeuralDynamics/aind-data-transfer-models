@@ -22,7 +22,7 @@ dependencies = [
     'aind-slurm-rest==0.1.0',
     'aind-data-schema-models>=0.1.7',
     'email-validator',
-    'aind-metadata-mapper>=0.14.0'
+    'aind-metadata-mapper==0.14.0'
 ]
 
 [project.optional-dependencies]
