@@ -53,7 +53,7 @@ class ModalityConfigs(BaseSettings):
     # added to the Modality class
     _MODALITY_MAP: ClassVar = {
         m().abbreviation.upper().replace("-", "_"): m().abbreviation
-        for m in Modality.ALL
+        for m in Modality._ALL
     }
 
     modality: Modality.ONE_OF = Field(
