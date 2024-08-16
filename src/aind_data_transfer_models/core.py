@@ -9,6 +9,12 @@ from typing import Any, ClassVar, List, Optional, Set, Union
 from aind_data_schema_models.data_name_patterns import build_data_name
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.platforms import Platform
+from aind_metadata_mapper.models import (
+    ProceduresSettings,
+    RawDataDescriptionSettings,
+    SubjectSettings,
+    JobSettings as GatherMetadataJobSettings,
+)
 from aind_slurm_rest import V0036JobProperties
 from pydantic import (
     ConfigDict,
@@ -47,7 +53,7 @@ class ModalityConfigs(BaseSettings):
     # added to the Modality class
     _MODALITY_MAP: ClassVar = {
         m().abbreviation.upper().replace("-", "_"): m().abbreviation
-        for m in Modality.ALL
+        for m in Modality._ALL
     }
 
     modality: Modality.ONE_OF = Field(
@@ -124,7 +130,7 @@ class BasicUploadJobConfigs(BaseSettings):
     # Need some way to extract abbreviations. Maybe a public method can be
     # added to the Platform class
     _PLATFORM_MAP: ClassVar = {
-        p().abbreviation.upper(): p().abbreviation for p in Platform.ALL
+        p().abbreviation.upper(): p().abbreviation for p in Platform._ALL
     }
     _DATETIME_PATTERN1: ClassVar = re.compile(
         r"^\d{4}-\d{2}-\d{2}[ |T]\d{2}:\d{2}:\d{2}$"
@@ -203,6 +209,11 @@ class BasicUploadJobConfigs(BaseSettings):
         ),
         title="Force Cloud Sync",
     )
+    metadata_configs: Optional[GatherMetadataJobSettings] = Field(
+        default=None,
+        description="Settings for gather metadata job",
+        title="Metadata Configs",
+    )
 
     @computed_field
     def s3_prefix(self) -> str:
@@ -264,6 +275,41 @@ class BasicUploadJobConfigs(BaseSettings):
             )
         else:
             return datetime_val
+
+    @model_validator(mode="after")
+    def fill_in_metadata_configs(self) -> "BasicUploadJobConfigs":
+        """Fills in settings for gather metadata job"""
+        input_metadata_configs = self.metadata_configs
+
+        if input_metadata_configs:
+            input_metadata_configs.directory_to_write_to = "stage"
+
+            if input_metadata_configs.metadata_dir is None:
+                input_metadata_configs.metadata_dir = self.metadata_dir
+
+            if input_metadata_configs.subject_settings is None:
+                subject_settings = SubjectSettings(subject_id=self.subject_id)
+                input_metadata_configs.subject_settings = subject_settings
+
+            if input_metadata_configs.procedures_settings is None:
+                procedures_settings = ProceduresSettings(
+                    subject_id=self.subject_id
+                )
+                input_metadata_configs.procedures_settings = (
+                    procedures_settings
+                )
+
+            if input_metadata_configs.raw_data_description_settings is None:
+                raw_data_description_settings = RawDataDescriptionSettings(
+                    name=self.s3_prefix,
+                    project_name=self.project_name,
+                    modality=[mod.modality for mod in self.modalities],
+                )
+                input_metadata_configs.raw_data_description_settings = (
+                    raw_data_description_settings
+                )
+
+        return self
 
 
 class SubmitJobRequest(BaseSettings):

@@ -7,6 +7,11 @@ from pathlib import PurePosixPath
 
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.platforms import Platform
+from aind_metadata_mapper.models import (
+    ProceduresSettings,
+    SubjectSettings,
+    JobSettings as GatherMetadataJobSettings,
+)
 from aind_slurm_rest import V0036JobProperties
 from pydantic import ValidationError
 
@@ -17,6 +22,7 @@ from aind_data_transfer_models.core import (
     ModalityConfigs,
     SubmitJobRequest,
 )
+from aind_data_schema_models.modalities import BehaviorVideos
 
 
 class TestModalityConfigs(unittest.TestCase):
@@ -91,7 +97,6 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         """Set up test class"""
-
         example_configs = BasicUploadJobConfigs(
             project_name="Behavior Platform",
             s3_bucket="some_bucket2",
@@ -104,7 +109,7 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
             ],
             subject_id="123456",
             acq_datetime=datetime(2020, 10, 13, 13, 10, 10),
-            metadata_dir=None,
+            metadata_dir="/some/metadata/dir/",
             metadata_dir_force=False,
             force_cloud_sync=False,
         )
@@ -215,6 +220,46 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
             BasicUploadJobConfigs(platform="MISSING", **base_configs)
         self.assertEqual("Unknown Platform: MISSING", e.exception.args[0])
 
+    def test_fill_in_metadata_configs(self):
+        """Tests that metadata jobSettings are filled in as expected"""
+        metadata_configs = GatherMetadataJobSettings(
+            directory_to_write_to="/some/path/",
+        )
+        base_configs = self.example_configs.model_dump(
+            exclude={
+                "s3_prefix": True,
+                "modalities": {"__all__": {"output_folder_name"}},
+                "metadata_configs": True,
+            }
+        )
+        configs = BasicUploadJobConfigs(
+            metadata_configs=metadata_configs, **base_configs
+        )
+        self.assertEqual(
+            configs.metadata_configs.metadata_dir, configs.metadata_dir
+        )
+        self.assertEqual(
+            configs.metadata_configs.directory_to_write_to, "stage"
+        )
+        self.assertEqual(
+            configs.metadata_configs.raw_data_description_settings.name,
+            configs.s3_prefix,
+        )
+        self.assertEqual(
+            configs.metadata_configs.raw_data_description_settings.modality,
+            [
+                BehaviorVideos(
+                    name="Behavior videos", abbreviation="behavior-videos"
+                )
+            ],
+        )
+        self.assertIsInstance(
+            configs.metadata_configs.procedures_settings, ProceduresSettings
+        )
+        self.assertIsInstance(
+            configs.metadata_configs.subject_settings, SubjectSettings
+        )
+
 
 class TestSubmitJobRequest(unittest.TestCase):
     """Tests SubmitJobRequest class"""
@@ -222,6 +267,7 @@ class TestSubmitJobRequest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         """Set up example configs to be used in tests"""
+
         example_upload_config = BasicUploadJobConfigs(
             project_name="Behavior Platform",
             s3_bucket="some_bucket2",

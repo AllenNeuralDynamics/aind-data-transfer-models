@@ -3,7 +3,7 @@
 import unittest
 from pydantic import ValidationError
 
-from aind_data_schema_models.modalities import ModalityModel, Modality
+from aind_data_schema_models.modalities import Modality, Ecephys, Fib
 from aind_data_transfer_models.trigger import TriggerConfigModel
 
 
@@ -91,8 +91,8 @@ class TestTriggerConfigModel(unittest.TestCase):
             capsule_version="1.0",
             modalities=["ecephys", "fib"],
         )
-        for m in config.modalities:
-            self.assertIsInstance(m, ModalityModel)
+        self.assertIsInstance(config.modalities[0], Ecephys)
+        self.assertIsInstance(config.modalities[1], Fib)
 
         config = TriggerConfigModel(
             job_type="run_generic_pipeline",
@@ -100,8 +100,8 @@ class TestTriggerConfigModel(unittest.TestCase):
             capsule_version="1.0",
             modalities=[Modality.ECEPHYS, Modality.FIB],
         )
-        for m in config.modalities:
-            self.assertIsInstance(m, ModalityModel)
+        self.assertIsInstance(config.modalities[0], Ecephys)
+        self.assertIsInstance(config.modalities[1], Fib)
 
         # emtpy list will set modality to None
         config = TriggerConfigModel(
@@ -122,7 +122,7 @@ class TestTriggerConfigModel(unittest.TestCase):
             )
 
         # wrong modality abbreviation
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(KeyError):
             config = TriggerConfigModel(
                 job_type="run_generic_pipeline",
                 process_capsule_id="0000",
