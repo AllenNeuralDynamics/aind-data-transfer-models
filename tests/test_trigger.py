@@ -24,6 +24,7 @@ class TestTriggerConfigModel(unittest.TestCase):
             capsule_version=None,
             results_suffix="processed",
             input_data_asset_name=None,
+            output_bucket="some-externa-bucket",
         )
         self.assertEqual(config.job_type, "ecephys")
         self.assertEqual(config.bucket, "my-bucket")

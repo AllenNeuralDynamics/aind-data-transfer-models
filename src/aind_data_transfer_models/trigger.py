@@ -96,6 +96,12 @@ class TriggerConfigModel(BaseModel):
         ),
         default=None,
     )
+
+    output_bucket: Optional[str] = Field(
+        description="The bucket where the results will be stored.",
+        default=None,
+    )
+
     # From legacy aind data transfer service
     aind_data_transfer_version: Optional[str] = Field(
         description="The version of the AIND Data Transfer Capsule.",
