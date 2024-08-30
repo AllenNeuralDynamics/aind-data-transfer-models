@@ -5,7 +5,7 @@ from copy import deepcopy
 from datetime import datetime
 from enum import Enum
 from pathlib import PurePosixPath
-from typing import Any, ClassVar, List, Optional, Set, Union
+from typing import Any, ClassVar, List, Optional, Set, Union, get_args
 
 from aind_data_schema_models.data_name_patterns import build_data_name
 from aind_data_schema_models.modalities import Modality
@@ -352,19 +352,37 @@ class BasicUploadJobConfigs(BaseSettings):
                     "job_settings", dict()
                 ).keys()
             )
-            == {"user_settings_config_file"}
+            == {"user_settings_config_file", "job_settings_name"}
             and isinstance(
                 user_defined_session_settings["job_settings"][
                     "user_settings_config_file"
                 ],
                 (str, PurePosixPath),
             )
+            and isinstance(
+                user_defined_session_settings["job_settings"][
+                    "job_settings_name"
+                ],
+                str,
+            )
+            and user_defined_session_settings["job_settings"][
+                "job_settings_name"
+            ]
+            in [
+                f.model_fields["job_settings_name"].default
+                for f in get_args(
+                    SessionSettings.model_fields["job_settings"].annotation
+                )
+            ]
         ):
             session_settings = SessionSettings.model_construct(
                 job_settings={
                     "user_settings_config_file": user_defined_session_settings[
                         "job_settings"
-                    ]["user_settings_config_file"]
+                    ]["user_settings_config_file"],
+                    "job_settings_name": user_defined_session_settings[
+                        "job_settings"
+                    ]["job_settings_name"],
                 }
             )
             validated_gather_configs.session_settings = session_settings

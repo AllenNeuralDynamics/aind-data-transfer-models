@@ -301,7 +301,8 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
         gather_metadata_settings = {
             "session_settings": {
                 "job_settings": {
-                    "user_settings_config_file": "session_settings.json"
+                    "user_settings_config_file": "session_settings.json",
+                    "job_settings_name": "Bergamo",
                 }
             }
         }
