@@ -1,9 +1,10 @@
 """Module to test trigger"""
 
 import unittest
+
+from aind_data_schema_models.modalities import Ecephys, Fib, Modality
 from pydantic import ValidationError
 
-from aind_data_schema_models.modalities import Modality, Ecephys, Fib
 from aind_data_transfer_models.trigger import TriggerConfigModel
 
 

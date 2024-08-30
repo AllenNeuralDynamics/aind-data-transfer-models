@@ -3,14 +3,18 @@
 import json
 import unittest
 from datetime import datetime
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 
-from aind_data_schema_models.modalities import Modality
+from aind_data_schema_models.modalities import BehaviorVideos, Modality
 from aind_data_schema_models.platforms import Platform
+from aind_metadata_mapper.models import BergamoSessionJobSettings
+from aind_metadata_mapper.models import (
+    JobSettings as GatherMetadataJobSettings,
+)
 from aind_metadata_mapper.models import (
     ProceduresSettings,
+    SessionSettings,
     SubjectSettings,
-    JobSettings as GatherMetadataJobSettings,
 )
 from aind_slurm_rest import V0036JobProperties
 from pydantic import ValidationError
@@ -22,7 +26,6 @@ from aind_data_transfer_models.core import (
     ModalityConfigs,
     SubmitJobRequest,
 )
-from aind_data_schema_models.modalities import BehaviorVideos
 
 
 class TestModalityConfigs(unittest.TestCase):
@@ -120,6 +123,7 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
                 "acq_datetime": True,
                 "s3_prefix": True,
                 "modalities": {"__all__": {"output_folder_name"}},
+                "metadata_configs": True,
             }
         )
 
@@ -239,7 +243,11 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
             configs.metadata_configs.metadata_dir, configs.metadata_dir
         )
         self.assertEqual(
-            configs.metadata_configs.directory_to_write_to, "stage"
+            configs.metadata_configs.metadata_dir_force,
+            configs.metadata_dir_force,
+        )
+        self.assertEqual(
+            configs.metadata_configs.directory_to_write_to, Path("stage")
         )
         self.assertEqual(
             configs.metadata_configs.raw_data_description_settings.name,
@@ -258,6 +266,56 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
         )
         self.assertIsInstance(
             configs.metadata_configs.subject_settings, SubjectSettings
+        )
+
+    def test_fill_in_metadata_configs_with_session(self):
+        """Tests fill_in_metadata_configs with user defined session"""
+        session_settings = SessionSettings(
+            job_settings=BergamoSessionJobSettings(
+                input_source="some_directory",
+                experimenter_full_name=["John Apple"],
+                subject_id="12345",
+                imaging_laser_wavelength=560,
+                fov_imaging_depth=120,
+                fov_targeted_structure="Bregma",
+                notes=None,
+            )
+        )
+
+        gather_metadata_settings = GatherMetadataJobSettings(
+            directory_to_write_to="stage", session_settings=session_settings
+        )
+        configs = BasicUploadJobConfigs(
+            metadata_configs=gather_metadata_settings,
+            acq_datetime=datetime(2020, 10, 13, 13, 10, 10),
+            **self.base_configs,
+        )
+        self.assertEqual(
+            session_settings, configs.metadata_configs.session_settings
+        )
+
+    def test_fill_in_metadata_configs_relaxed_session(self):
+        """Tests fill_in_metadata_configs allows for relaxed session
+        validation"""
+
+        gather_metadata_settings = {
+            "session_settings": {
+                "job_settings": {
+                    "user_settings_config_file": "session_settings.json"
+                }
+            }
+        }
+        configs = BasicUploadJobConfigs(
+            metadata_configs=gather_metadata_settings,
+            acq_datetime=datetime(2020, 10, 13, 13, 10, 10),
+            **self.base_configs,
+        )
+        model_json = json.loads(
+            configs.model_dump_json(warnings=False, exclude_none=True)
+        )
+        self.assertEqual(
+            gather_metadata_settings["session_settings"],
+            model_json["metadata_configs"]["session_settings"],
         )
 
 
@@ -357,10 +415,7 @@ class TestSubmitJobRequest(unittest.TestCase):
             )
         # email_validator changed error message across versions. We can just
         # do a quick check that the error message at least contains this part.
-        expected_error_message = (
-            "value is not a valid email address: "
-            "An email address must have an @-sign."
-        )
+        expected_error_message = "value is not a valid email address: "
         actual_error_message = json.loads(e.exception.json())[0]["msg"]
         # Check only 1 validation error is raised
         self.assertEqual(1, len(json.loads(e.exception.json())))
