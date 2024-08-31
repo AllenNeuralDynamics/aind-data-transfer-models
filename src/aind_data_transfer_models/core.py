@@ -328,7 +328,6 @@ class BasicUploadJobConfigs(BaseSettings):
                 project_name=validated_self.project_name,
                 modality=([mod.modality for mod in validated_self.modalities]),
             ),
-            # "metadata_dir": metadata_dir,
             "metadata_dir_force": validated_self.metadata_dir_force,
         }
         # Override user defined values if they were set.
@@ -382,9 +381,6 @@ class BasicUploadJobConfigs(BaseSettings):
                 }
             )
             validated_gather_configs.session_settings = session_settings
-            # user_defined_metadata_configs["session_settings"] = (
-            #     session_settings
-            # )
             validated_self.metadata_configs = validated_gather_configs
         else:
             user_defined_metadata_configs["session_settings"] = (
