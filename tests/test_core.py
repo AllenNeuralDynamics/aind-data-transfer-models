@@ -146,6 +146,7 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
             exclude={
                 "s3_bucket": True,
                 "s3_prefix": True,
+                "metadata_configs": True,
                 "modalities": {"__all__": {"output_folder_name"}},
             }
         )
@@ -203,6 +204,7 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
             exclude={
                 "platform": True,
                 "s3_prefix": True,
+                "metadata_configs": True,
                 "modalities": {"__all__": {"output_folder_name"}},
             }
         )
@@ -216,6 +218,7 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
             exclude={
                 "platform": True,
                 "s3_prefix": True,
+                "metadata_configs": True,
                 "modalities": {"__all__": {"output_folder_name"}},
             }
         )

@@ -314,11 +314,7 @@ class BasicUploadJobConfigs(BaseSettings):
         else:
             user_defined_session_settings = None
         validated_self = handler(all_configs)
-        metadata_dir = (
-            None
-            if validated_self.metadata_dir is None
-            else validated_self.metadata_dir.as_posix()
-        )
+        metadata_dir = validated_self.metadata_dir
         default_metadata_configs = {
             "directory_to_write_to": "stage",
             "subject_settings": SubjectSettings(
@@ -332,7 +328,7 @@ class BasicUploadJobConfigs(BaseSettings):
                 project_name=validated_self.project_name,
                 modality=([mod.modality for mod in validated_self.modalities]),
             ),
-            "metadata_dir": metadata_dir,
+            # "metadata_dir": metadata_dir,
             "metadata_dir_force": validated_self.metadata_dir_force,
         }
         # Override user defined values if they were set.
@@ -399,6 +395,11 @@ class BasicUploadJobConfigs(BaseSettings):
                     user_defined_metadata_configs
                 )
             )
+        validated_self.metadata_configs = (
+            validated_self.metadata_configs.model_copy(
+                update={"metadata_dir": metadata_dir}, deep=True
+            )
+        )
         return validated_self
 
 
