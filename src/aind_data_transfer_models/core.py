@@ -1,19 +1,23 @@
 """Core models for using aind-data-transfer-service"""
 
 import re
+from copy import deepcopy
 from datetime import datetime
 from enum import Enum
 from pathlib import PurePosixPath
-from typing import Any, ClassVar, List, Optional, Set, Union
+from typing import Any, ClassVar, List, Optional, Set, Union, get_args
 
 from aind_data_schema_models.data_name_patterns import build_data_name
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.platforms import Platform
 from aind_metadata_mapper.models import (
+    JobSettings as GatherMetadataJobSettings,
+)
+from aind_metadata_mapper.models import (
     ProceduresSettings,
     RawDataDescriptionSettings,
+    SessionSettings,
     SubjectSettings,
-    JobSettings as GatherMetadataJobSettings,
 )
 from aind_slurm_rest import V0036JobProperties
 from pydantic import (
@@ -213,6 +217,7 @@ class BasicUploadJobConfigs(BaseSettings):
         default=None,
         description="Settings for gather metadata job",
         title="Metadata Configs",
+        validate_default=True,
     )
 
     @computed_field
@@ -276,40 +281,122 @@ class BasicUploadJobConfigs(BaseSettings):
         else:
             return datetime_val
 
-    @model_validator(mode="after")
-    def fill_in_metadata_configs(self) -> "BasicUploadJobConfigs":
+    @model_validator(mode="wrap")
+    def fill_in_metadata_configs(self, handler):
         """Fills in settings for gather metadata job"""
-        input_metadata_configs = self.metadata_configs
-
-        if input_metadata_configs:
-            input_metadata_configs.directory_to_write_to = "stage"
-
-            if input_metadata_configs.metadata_dir is None:
-                input_metadata_configs.metadata_dir = self.metadata_dir
-
-            if input_metadata_configs.subject_settings is None:
-                subject_settings = SubjectSettings(subject_id=self.subject_id)
-                input_metadata_configs.subject_settings = subject_settings
-
-            if input_metadata_configs.procedures_settings is None:
-                procedures_settings = ProceduresSettings(
-                    subject_id=self.subject_id
+        all_configs = deepcopy(self)
+        if isinstance(all_configs, BasicUploadJobConfigs):
+            all_configs = all_configs.model_dump(
+                exclude={
+                    "s3_prefix": True,
+                    "modalities": {"__all__": {"output_folder_name"}},
+                }
+            )
+        if all_configs.get("metadata_configs") is not None:
+            if isinstance(
+                all_configs.get("metadata_configs"), GatherMetadataJobSettings
+            ):
+                user_defined_metadata_configs = all_configs.get(
+                    "metadata_configs"
+                ).model_dump()
+            else:
+                user_defined_metadata_configs = deepcopy(
+                    all_configs.get("metadata_configs")
                 )
-                input_metadata_configs.procedures_settings = (
-                    procedures_settings
-                )
+            del all_configs["metadata_configs"]
+        else:
+            user_defined_metadata_configs = dict()
+        if user_defined_metadata_configs.get("session_settings") is not None:
+            user_defined_session_settings = deepcopy(
+                user_defined_metadata_configs.get("session_settings")
+            )
+            del user_defined_metadata_configs["session_settings"]
+        else:
+            user_defined_session_settings = None
+        validated_self = handler(all_configs)
+        metadata_dir = validated_self.metadata_dir
+        default_metadata_configs = {
+            "directory_to_write_to": "stage",
+            "subject_settings": SubjectSettings(
+                subject_id=validated_self.subject_id
+            ),
+            "procedures_settings": ProceduresSettings(
+                subject_id=validated_self.subject_id
+            ),
+            "raw_data_description_settings": RawDataDescriptionSettings(
+                name=validated_self.s3_prefix,
+                project_name=validated_self.project_name,
+                modality=([mod.modality for mod in validated_self.modalities]),
+            ),
+            "metadata_dir_force": validated_self.metadata_dir_force,
+        }
+        # Override user defined values if they were set.
+        user_defined_metadata_configs.update(default_metadata_configs)
 
-            if input_metadata_configs.raw_data_description_settings is None:
-                raw_data_description_settings = RawDataDescriptionSettings(
-                    name=self.s3_prefix,
-                    project_name=self.project_name,
-                    modality=[mod.modality for mod in self.modalities],
-                )
-                input_metadata_configs.raw_data_description_settings = (
-                    raw_data_description_settings
-                )
+        # Validate metadata configs without session settings
+        validated_gather_configs = GatherMetadataJobSettings.model_validate(
+            user_defined_metadata_configs
+        )
 
-        return self
+        # Allow relaxed Session settings so that only job_settings_name and
+        # user_settings_config_file need to be set
+        if (
+            user_defined_session_settings is not None
+            and set(
+                user_defined_session_settings.get(
+                    "job_settings", dict()
+                ).keys()
+            )
+            == {"user_settings_config_file", "job_settings_name"}
+            and isinstance(
+                user_defined_session_settings["job_settings"][
+                    "user_settings_config_file"
+                ],
+                (str, PurePosixPath),
+            )
+            and isinstance(
+                user_defined_session_settings["job_settings"][
+                    "job_settings_name"
+                ],
+                str,
+            )
+            and user_defined_session_settings["job_settings"][
+                "job_settings_name"
+            ]
+            in [
+                f.model_fields["job_settings_name"].default
+                for f in get_args(
+                    SessionSettings.model_fields["job_settings"].annotation
+                )
+            ]
+        ):
+            session_settings = SessionSettings.model_construct(
+                job_settings={
+                    "user_settings_config_file": user_defined_session_settings[
+                        "job_settings"
+                    ]["user_settings_config_file"],
+                    "job_settings_name": user_defined_session_settings[
+                        "job_settings"
+                    ]["job_settings_name"],
+                }
+            )
+            validated_gather_configs.session_settings = session_settings
+            validated_self.metadata_configs = validated_gather_configs
+        else:
+            user_defined_metadata_configs["session_settings"] = (
+                user_defined_session_settings
+            )
+            validated_self.metadata_configs = (
+                GatherMetadataJobSettings.model_validate(
+                    user_defined_metadata_configs
+                )
+            )
+        validated_self.metadata_configs = (
+            validated_self.metadata_configs.model_copy(
+                update={"metadata_dir": metadata_dir}, deep=True
+            )
+        )
+        return validated_self
 
 
 class SubmitJobRequest(BaseSettings):
