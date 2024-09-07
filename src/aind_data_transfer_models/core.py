@@ -164,12 +164,12 @@ class BasicUploadJobConfigs(BaseSettings):
     )
     input_data_mount: Optional[str] = Field(
         default=None,
-        description="Input mount if user defines process_capsule_id",
+        description="(deprecated - set trigger_capsule_configs)",
         title="Input Data Mount",
     )
     process_capsule_id: Optional[str] = Field(
         None,
-        description="Use custom codeocean capsule or pipeline id",
+        description="(deprecated - set trigger_capsule_configs)",
         title="Process Capsule ID",
     )
     s3_bucket: BucketType = Field(
@@ -293,18 +293,23 @@ class BasicUploadJobConfigs(BaseSettings):
             return datetime_val
 
     @staticmethod
-    def _get_job_type(platform: Platform) -> ValidJobType:
+    def _get_job_type(
+        platform: Platform, process_capsule_id: Optional[str] = None
+    ) -> ValidJobType:
         """
         Determines job type based on Platform
         Parameters
         ----------
         platform : Platform
+        process_capsule_id: Optional[str]
 
         Returns
         -------
         ValidJobType
 
         """
+        if process_capsule_id is not None:
+            return ValidJobType.RUN_GENERIC_PIPELINE
         if platform == Platform.ECEPHYS:
             return ValidJobType.ECEPHYS
         elif platform == Platform.SMARTSPIM:
@@ -324,9 +329,22 @@ class BasicUploadJobConfigs(BaseSettings):
         -------
 
         """
+        if (
+            self.trigger_capsule_configs is not None
+            and self.process_capsule_id is not None
+        ):
+            raise ValueError(
+                "Only one of trigger_capsule_configs or legacy "
+                "process_capsule_id should be set! Please use "
+                "trigger_capsule_configs."
+            )
         if self.trigger_capsule_configs is None:
             default_trigger_capsule_configs = TriggerConfigModel(
-                job_type=self._get_job_type(self.platform)
+                job_type=self._get_job_type(
+                    self.platform, self.process_capsule_id
+                ),
+                process_capsule_id=self.process_capsule_id,
+                input_data_mount=self.input_data_mount,
             )
         else:
             default_trigger_capsule_configs = (

@@ -308,6 +308,64 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
         )
         self.assertEqual(expected_configs, configs.trigger_capsule_configs)
 
+    def test_set_trigger_capsule_configs_user_defined_error(self):
+        """Tests set_trigger_capsule_configs values when user defines their
+        own settings and an error is raised when user sets both trigger
+        configs and process_capsule_id."""
+        user_configs = TriggerConfigModel(
+            job_type=ValidJobType.RUN_GENERIC_PIPELINE,
+            process_capsule_id="abc-123",
+            bucket="should_be_overwritten",
+            prefix="should_be_overwritten",
+            asset_name="should_be_overwritten",
+            mount="custom_mount",
+            results_suffix="custom-suffix",
+        )
+        base_configs = self.example_configs.model_dump(
+            exclude={
+                "s3_prefix": True,
+                "modalities": {"__all__": {"output_folder_name"}},
+                "metadata_configs": True,
+                "trigger_capsule_configs": True,
+                "process_capsule_id": True,
+            }
+        )
+        with self.assertRaises(ValidationError):
+            _ = BasicUploadJobConfigs(
+                trigger_capsule_configs=user_configs,
+                **base_configs,
+                process_capsule_id="def-456",
+            )
+
+    def test_set_trigger_capsule_configs_user_defined_process_id(self):
+        """Tests set_trigger_capsule_configs values when user defines their
+        own settings and legacy process capsule id."""
+        base_configs = self.example_configs.model_dump(
+            exclude={
+                "s3_prefix": True,
+                "modalities": {"__all__": {"output_folder_name"}},
+                "metadata_configs": True,
+                "trigger_capsule_configs": True,
+                "process_capsule_id": True,
+            }
+        )
+        configs = BasicUploadJobConfigs(
+            **base_configs, process_capsule_id="def-456"
+        )
+        expected_trigger_configs = TriggerConfigModel(
+            job_type=ValidJobType.RUN_GENERIC_PIPELINE,
+            bucket="private",
+            prefix="behavior_123456_2020-10-13_13-10-10",
+            asset_name="behavior_123456_2020-10-13_13-10-10",
+            mount="behavior_123456_2020-10-13_13-10-10",
+            results_suffix="processed",
+            process_capsule_id="def-456",
+            modalities=[Modality.BEHAVIOR_VIDEOS],
+        )
+        self.assertEqual(
+            expected_trigger_configs, configs.trigger_capsule_configs
+        )
+
     def test_fill_in_metadata_configs(self):
         """Tests that metadata jobSettings are filled in as expected"""
         metadata_configs = GatherMetadataJobSettings(
