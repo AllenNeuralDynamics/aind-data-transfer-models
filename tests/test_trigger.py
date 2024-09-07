@@ -35,7 +35,7 @@ class TestTriggerConfigModel(unittest.TestCase):
 
         # passing upload info and input data asset id should fail
         with self.assertRaises(ValueError):
-            config = TriggerConfigModel(
+            _ = TriggerConfigModel(
                 job_type="ecephys",
                 bucket="my-bucket",
                 prefix="ecephys_0000",
@@ -61,7 +61,7 @@ class TestTriggerConfigModel(unittest.TestCase):
 
         # passing multiple assets with only no mount points
         with self.assertRaises(ValueError):
-            config = TriggerConfigModel(
+            _ = TriggerConfigModel(
                 job_type="ecephys",
                 input_data_asset_id="0000;0001",
                 input_data_mount=None,
@@ -70,7 +70,7 @@ class TestTriggerConfigModel(unittest.TestCase):
 
         # passing multiple assets with only no input_data_asset_name
         with self.assertRaises(ValueError):
-            config = TriggerConfigModel(
+            _ = TriggerConfigModel(
                 job_type="ecephys",
                 input_data_asset_id="0000;0001",
                 input_data_mount="mount1;mount2",
@@ -78,7 +78,7 @@ class TestTriggerConfigModel(unittest.TestCase):
 
         # passing multiple assets with unmatched mount points
         with self.assertRaises(ValueError):
-            config = TriggerConfigModel(
+            _ = TriggerConfigModel(
                 job_type="ecephys",
                 input_data_asset_id="0000;0001",
                 input_data_mount="mount1;mount2;mount3",

@@ -26,6 +26,7 @@ from aind_data_transfer_models.core import (
     ModalityConfigs,
     SubmitJobRequest,
 )
+from aind_data_transfer_models.trigger import TriggerConfigModel, ValidJobType
 
 
 class TestModalityConfigs(unittest.TestCase):
@@ -226,6 +227,86 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
         with self.assertRaises(AttributeError) as e:
             BasicUploadJobConfigs(platform="MISSING", **base_configs)
         self.assertEqual("Unknown Platform: MISSING", e.exception.args[0])
+
+    def test_get_job_type(self):
+        """Tests _get_job_type for several situations."""
+
+        self.assertEqual(
+            ValidJobType.ECEPHYS,
+            BasicUploadJobConfigs._get_job_type(platform=Platform.ECEPHYS),
+        )
+        self.assertEqual(
+            ValidJobType.SMARTSPIM,
+            BasicUploadJobConfigs._get_job_type(platform=Platform.SMARTSPIM),
+        )
+        self.assertEqual(
+            ValidJobType.SINGLEPLANE_OPHYS,
+            BasicUploadJobConfigs._get_job_type(
+                platform=Platform.SINGLE_PLANE_OPHYS
+            ),
+        )
+        self.assertEqual(
+            ValidJobType.MULTIPLANE_OPHYS,
+            BasicUploadJobConfigs._get_job_type(
+                platform=Platform.MULTIPLANE_OPHYS
+            ),
+        )
+        self.assertEqual(
+            ValidJobType.REGISTER_DATA,
+            BasicUploadJobConfigs._get_job_type(platform=Platform.BEHAVIOR),
+        )
+
+    def test_set_trigger_capsule_configs_defaults(self):
+        """Tests set_trigger_capsule_configs sets default values for
+        trigger_capsule_configs."""
+        expected_configs = TriggerConfigModel(
+            job_type=ValidJobType.REGISTER_DATA,
+            bucket="private",
+            prefix="behavior_123456_2020-10-13_13-10-10",
+            asset_name="behavior_123456_2020-10-13_13-10-10",
+            mount="behavior_123456_2020-10-13_13-10-10",
+            results_suffix="processed",
+            modalities=[m.modality for m in self.example_configs.modalities],
+        )
+        self.assertEqual(
+            expected_configs, self.example_configs.trigger_capsule_configs
+        )
+
+    def test_set_trigger_capsule_configs_user_defined(self):
+        """Tests set_trigger_capsule_configs values when user defines their
+        own settings."""
+        user_configs = TriggerConfigModel(
+            job_type=ValidJobType.RUN_GENERIC_PIPELINE,
+            process_capsule_id="abc-123",
+            bucket="should_be_overwritten",
+            prefix="should_be_overwritten",
+            asset_name="should_be_overwritten",
+            mount="custom_mount",
+            results_suffix="custom-suffix",
+        )
+        base_configs = self.example_configs.model_dump(
+            exclude={
+                "s3_prefix": True,
+                "modalities": {"__all__": {"output_folder_name"}},
+                "metadata_configs": True,
+                "trigger_capsule_configs": True,
+            }
+        )
+        configs = BasicUploadJobConfigs(
+            trigger_capsule_configs=user_configs, **base_configs
+        )
+
+        expected_configs = TriggerConfigModel(
+            job_type=ValidJobType.RUN_GENERIC_PIPELINE,
+            bucket="private",
+            prefix="behavior_123456_2020-10-13_13-10-10",
+            asset_name="behavior_123456_2020-10-13_13-10-10",
+            mount="custom_mount",
+            process_capsule_id="abc-123",
+            results_suffix="custom-suffix",
+            modalities=[m.modality for m in self.example_configs.modalities],
+        )
+        self.assertEqual(expected_configs, configs.trigger_capsule_configs)
 
     def test_fill_in_metadata_configs(self):
         """Tests that metadata jobSettings are filled in as expected"""
