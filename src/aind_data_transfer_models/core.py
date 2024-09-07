@@ -301,6 +301,7 @@ class BasicUploadJobConfigs(BaseSettings):
         Parameters
         ----------
         platform : Platform
+        process_capsule_id: Optional[str]
 
         Returns
         -------
