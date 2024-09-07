@@ -31,6 +31,8 @@ from pydantic import (
 )
 from pydantic_settings import BaseSettings
 
+from aind_data_transfer_models.trigger import TriggerConfigModel, ValidJobType
+
 
 class EmailNotificationType(str, Enum):
     """Types of email notifications a user can select"""
@@ -219,6 +221,15 @@ class BasicUploadJobConfigs(BaseSettings):
         title="Metadata Configs",
         validate_default=True,
     )
+    trigger_capsule_configs: Optional[TriggerConfigModel] = Field(
+        default=None,
+        description=(
+            "Settings for the codeocean trigger capsule. "
+            "Validators will set defaults."
+        ),
+        title="Trigger Capsule Configs",
+        validate_default=True,
+    )
 
     @computed_field
     def s3_prefix(self) -> str:
@@ -280,6 +291,58 @@ class BasicUploadJobConfigs(BaseSettings):
             )
         else:
             return datetime_val
+
+    @staticmethod
+    def _get_job_type(platform: Platform) -> ValidJobType:
+        """
+        Determines job type based on Platform
+        Parameters
+        ----------
+        platform : Platform
+
+        Returns
+        -------
+        ValidJobType
+
+        """
+        if platform == Platform.ECEPHYS:
+            return ValidJobType.ECEPHYS
+        elif platform == Platform.SMARTSPIM:
+            return ValidJobType.SMARTSPIM
+        elif platform == Platform.SINGLE_PLANE_OPHYS:
+            return ValidJobType.SINGLEPLANE_OPHYS
+        elif platform == Platform.MULTIPLANE_OPHYS:
+            return ValidJobType.MULTIPLANE_OPHYS
+        else:
+            return ValidJobType.REGISTER_DATA
+
+    @model_validator(mode="after")
+    def set_trigger_capsule_configs(self):
+        """
+        Sets default values for the code ocean trigger capsule.
+        Returns
+        -------
+
+        """
+        if self.trigger_capsule_configs is None:
+            default_trigger_capsule_configs = TriggerConfigModel(
+                job_type=self._get_job_type(self.platform)
+            )
+        else:
+            default_trigger_capsule_configs = (
+                self.trigger_capsule_configs.model_copy(deep=True)
+            )
+        # Override these settings if the user supplied them.
+        default_trigger_capsule_configs.bucket = self.s3_bucket
+        default_trigger_capsule_configs.prefix = self.s3_prefix
+        default_trigger_capsule_configs.asset_name = self.s3_prefix
+        if default_trigger_capsule_configs.mount is None:
+            default_trigger_capsule_configs.mount = self.s3_prefix
+        default_trigger_capsule_configs.modalities = [
+            m.modality for m in self.modalities
+        ]
+        self.trigger_capsule_configs = default_trigger_capsule_configs
+        return self
 
     @model_validator(mode="wrap")
     def fill_in_metadata_configs(self, handler):
