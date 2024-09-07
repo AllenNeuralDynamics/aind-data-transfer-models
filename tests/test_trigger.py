@@ -2,7 +2,7 @@
 
 import unittest
 
-from aind_data_schema_models.modalities import Ecephys, Fib, Modality
+from aind_data_schema_models.modalities import Modality
 from pydantic import ValidationError
 
 from aind_data_transfer_models.trigger import TriggerConfigModel
@@ -93,8 +93,8 @@ class TestTriggerConfigModel(unittest.TestCase):
             capsule_version="1.0",
             modalities=["ecephys", "fib"],
         )
-        self.assertIsInstance(config.modalities[0], Ecephys)
-        self.assertIsInstance(config.modalities[1], Fib)
+        self.assertEqual(config.modalities[0], Modality.ECEPHYS)
+        self.assertEqual(config.modalities[1], Modality.FIB)
 
         config = TriggerConfigModel(
             job_type="run_generic_pipeline",
@@ -102,8 +102,8 @@ class TestTriggerConfigModel(unittest.TestCase):
             capsule_version="1.0",
             modalities=[Modality.ECEPHYS, Modality.FIB],
         )
-        self.assertIsInstance(config.modalities[0], Ecephys)
-        self.assertIsInstance(config.modalities[1], Fib)
+        self.assertEqual(config.modalities[0], Modality.ECEPHYS)
+        self.assertEqual(config.modalities[1], Modality.FIB)
 
         # emtpy list will set modality to None
         config = TriggerConfigModel(
@@ -116,7 +116,7 @@ class TestTriggerConfigModel(unittest.TestCase):
 
         # wrong modality type
         with self.assertRaises(ValidationError):
-            config = TriggerConfigModel(
+            _ = TriggerConfigModel(
                 job_type="run_generic_pipeline",
                 process_capsule_id="0000",
                 capsule_version="1.0",
@@ -124,8 +124,8 @@ class TestTriggerConfigModel(unittest.TestCase):
             )
 
         # wrong modality abbreviation
-        with self.assertRaises(KeyError):
-            config = TriggerConfigModel(
+        with self.assertRaises(ValidationError):
+            _ = TriggerConfigModel(
                 job_type="run_generic_pipeline",
                 process_capsule_id="0000",
                 capsule_version="1.0",
@@ -144,7 +144,7 @@ class TestTriggerConfigModel(unittest.TestCase):
         self.assertEqual(config.capsule_version, "1.0")
 
         with self.assertRaises(ValueError):
-            config = TriggerConfigModel(
+            _ = TriggerConfigModel(
                 job_type="run_generic_pipeline",
                 process_capsule_id=None,
                 capsule_version="1.0",
@@ -161,3 +161,7 @@ class TestTriggerConfigModel(unittest.TestCase):
         )
         assert config.input_data_mount == "0000"
         assert config.process_capsule_id == "0101"
+
+
+if __name__ == "__main__":
+    unittest.main()

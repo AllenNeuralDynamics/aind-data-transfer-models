@@ -5,7 +5,7 @@ import unittest
 from datetime import datetime
 from pathlib import Path, PurePosixPath
 
-from aind_data_schema_models.modalities import BehaviorVideos, Modality
+from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.platforms import Platform
 from aind_metadata_mapper.models import BergamoSessionJobSettings
 from aind_metadata_mapper.models import (
@@ -258,11 +258,7 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
         )
         self.assertEqual(
             configs.metadata_configs.raw_data_description_settings.modality,
-            [
-                BehaviorVideos(
-                    name="Behavior videos", abbreviation="behavior-videos"
-                )
-            ],
+            [Modality.BEHAVIOR_VIDEOS],
         )
         self.assertIsInstance(
             configs.metadata_configs.procedures_settings, ProceduresSettings
