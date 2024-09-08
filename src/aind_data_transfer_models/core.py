@@ -395,7 +395,11 @@ class BasicUploadJobConfigs(BaseSettings):
         else:
             user_defined_session_settings = None
         validated_self = handler(all_configs)
-        metadata_dir = validated_self.metadata_dir
+        metadata_dir = (
+            None
+            if validated_self.metadata_dir is None
+            else validated_self.metadata_dir.as_posix()
+        )
         default_metadata_configs = {
             "directory_to_write_to": "stage",
             "subject_settings": SubjectSettings(

@@ -382,7 +382,8 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
             metadata_configs=metadata_configs, **base_configs
         )
         self.assertEqual(
-            configs.metadata_configs.metadata_dir, configs.metadata_dir
+            configs.metadata_configs.metadata_dir,
+            configs.metadata_dir.as_posix(),
         )
         self.assertEqual(
             configs.metadata_configs.metadata_dir_force,
