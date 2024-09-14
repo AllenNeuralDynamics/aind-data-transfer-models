@@ -1,5 +1,6 @@
 """Core models for using aind-data-transfer-service"""
 
+import logging
 import re
 from copy import deepcopy
 from datetime import datetime
@@ -332,11 +333,12 @@ class BasicUploadJobConfigs(BaseSettings):
         if (
             self.trigger_capsule_configs is not None
             and self.process_capsule_id is not None
+            and self.trigger_capsule_configs.process_capsule_id
+            != self.process_capsule_id
         ):
-            raise ValueError(
+            logging.warning(
                 "Only one of trigger_capsule_configs or legacy "
-                "process_capsule_id should be set! Please use "
-                "trigger_capsule_configs."
+                "process_capsule_id should be set!"
             )
         if self.trigger_capsule_configs is None:
             default_trigger_capsule_configs = TriggerConfigModel(
