@@ -4,6 +4,7 @@ import json
 import unittest
 from datetime import datetime
 from pathlib import Path, PurePosixPath
+from unittest.mock import MagicMock, patch
 
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.platforms import Platform
@@ -308,7 +309,10 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
         )
         self.assertEqual(expected_configs, configs.trigger_capsule_configs)
 
-    def test_set_trigger_capsule_configs_user_defined_error(self):
+    @patch("logging.warning")
+    def test_set_trigger_capsule_configs_user_defined_error(
+        self, mock_warn: MagicMock
+    ):
         """Tests set_trigger_capsule_configs values when user defines their
         own settings and an error is raised when user sets both trigger
         configs and process_capsule_id."""
@@ -330,12 +334,15 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
                 "process_capsule_id": True,
             }
         )
-        with self.assertRaises(ValidationError):
-            _ = BasicUploadJobConfigs(
-                trigger_capsule_configs=user_configs,
-                **base_configs,
-                process_capsule_id="def-456",
-            )
+        _ = BasicUploadJobConfigs(
+            trigger_capsule_configs=user_configs,
+            **base_configs,
+            process_capsule_id="def-456",
+        )
+        mock_warn.assert_called_once_with(
+            "Only one of trigger_capsule_configs or legacy "
+            "process_capsule_id should be set!"
+        )
 
     def test_set_trigger_capsule_configs_user_defined_process_id(self):
         """Tests set_trigger_capsule_configs values when user defines their
