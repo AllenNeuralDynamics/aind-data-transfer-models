@@ -12,10 +12,11 @@ from aind_data_transfer_models.s3_upload_configs import (
 class TestS3UploadJobConfigs(unittest.TestCase):
     """Tests S3UploadJobConfigs class methods"""
 
-    def test_computed_s3_prefix(self):
+    def test_s3_prefix_pattern(self):
         """Tests s3_prefix is computed correctly."""
         example_scratch_configs = S3UploadJobConfigs(
             s3_bucket="scratch",
+            s3_prefix="anna.apple/data_set_2",
             user_email="anna.apple@acme.co",
             input_source=(PurePosixPath("dir") / "data_set_2"),
             force_cloud_sync=False,
@@ -33,12 +34,14 @@ class TestS3UploadSubmitJobRequest(unittest.TestCase):
         """Set up test class"""
         example_scratch_configs = S3UploadJobConfigs(
             s3_bucket="scratch",
+            s3_prefix="anna.apple/data_set_2",
             user_email="anna.apple@acme.co",
             input_source=(PurePosixPath("dir") / "data_set_2"),
             force_cloud_sync=False,
         )
         example_archive_configs = S3UploadJobConfigs(
             s3_bucket="archive",
+            s3_prefix="ephys_project/data_set_2",
             user_email="anna.apple@acme.co",
             input_source=(PurePosixPath("dir") / "data_set_2"),
             force_cloud_sync=False,

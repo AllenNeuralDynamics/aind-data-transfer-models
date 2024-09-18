@@ -5,13 +5,7 @@ from enum import Enum
 from pathlib import PurePosixPath
 from typing import List, Literal, Optional, Set
 
-from pydantic import (
-    ConfigDict,
-    EmailStr,
-    Field,
-    computed_field,
-    model_validator,
-)
+from pydantic import ConfigDict, EmailStr, Field, model_validator
 from pydantic_settings import BaseSettings
 
 
@@ -37,14 +31,10 @@ class EmailNotificationType(str, Enum):
 class S3UploadJobConfigs(BaseSettings):
     """Configs for uploading a local directory to S3."""
 
-    user_email: EmailStr = Field(
-        ...,
-        description=(
-            "User email address. Data will be stored in archive or scratch "
-            "under user's email name."
-        ),
+    user_email: Optional[EmailStr] = Field(
+        default=None,
+        description=("User email address to send notifications to."),
     )
-
     email_notification_types: Optional[Set[EmailNotificationType]] = Field(
         default=None,
         description=(
@@ -59,6 +49,13 @@ class S3UploadJobConfigs(BaseSettings):
     input_source: PurePosixPath = Field(
         ..., description="Local source directory to sync to s3."
     )
+    s3_prefix: str = Field(
+        ...,
+        description=(
+            "Should be the project name if storing in archive. Should be user "
+            "name if storing in scratch."
+        ),
+    )
     force_cloud_sync: bool = Field(
         default=False,
         description=(
@@ -66,14 +63,6 @@ class S3UploadJobConfigs(BaseSettings):
         ),
         title="Force Cloud Sync",
     )
-
-    @computed_field
-    def s3_prefix(self) -> str:
-        """Construct s3_prefix from configs."""
-        user_name = self.user_email.split("@")[0]
-        input_source = self.input_source.name
-        s3_prefix = f"{user_name}/{input_source}"
-        return s3_prefix.strip("/")
 
 
 class S3UploadSubmitJobRequest(BaseSettings):
