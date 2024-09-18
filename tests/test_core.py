@@ -22,10 +22,12 @@ from pydantic import ValidationError
 
 from aind_data_transfer_models.core import (
     BasicUploadJobConfigs,
-    BucketType,
-    EmailNotificationType,
     ModalityConfigs,
     SubmitJobRequest,
+)
+from aind_data_transfer_models.s3_upload_configs import (
+    BucketType,
+    EmailNotificationType,
 )
 from aind_data_transfer_models.trigger import TriggerConfigModel, ValidJobType
 
