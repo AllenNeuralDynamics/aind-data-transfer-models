@@ -5,7 +5,13 @@ from enum import Enum
 from pathlib import PurePosixPath
 from typing import List, Literal, Optional, Set
 
-from pydantic import ConfigDict, EmailStr, Field, model_validator
+from pydantic import (
+    ConfigDict,
+    EmailStr,
+    Field,
+    computed_field,
+    model_validator,
+)
 from pydantic_settings import BaseSettings
 
 
@@ -60,6 +66,14 @@ class S3UploadJobConfigs(BaseSettings):
         ),
         title="Force Cloud Sync",
     )
+
+    @computed_field
+    def s3_prefix(self) -> str:
+        """Construct s3_prefix from configs."""
+        user_name = self.user_email.split("@")[0]
+        input_source = self.input_source.name
+        s3_prefix = f"{user_name}/{input_source}"
+        return s3_prefix.strip("/")
 
 
 class S3UploadSubmitJobRequest(BaseSettings):

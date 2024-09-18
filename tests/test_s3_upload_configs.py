@@ -9,6 +9,22 @@ from aind_data_transfer_models.s3_upload_configs import (
 )
 
 
+class TestS3UploadJobConfigs(unittest.TestCase):
+    """Tests S3UploadJobConfigs class methods"""
+
+    def test_computed_s3_prefix(self):
+        """Tests s3_prefix is computed correctly."""
+        example_scratch_configs = S3UploadJobConfigs(
+            s3_bucket="scratch",
+            user_email="anna.apple@acme.co",
+            input_source=(PurePosixPath("dir") / "data_set_2"),
+            force_cloud_sync=False,
+        )
+        self.assertEqual(
+            "anna.apple/data_set_2", example_scratch_configs.s3_prefix
+        )
+
+
 class TestS3UploadSubmitJobRequest(unittest.TestCase):
     """Tests S3UploadSubmitJobRequest class"""
 
