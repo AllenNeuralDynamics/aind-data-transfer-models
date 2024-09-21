@@ -5,7 +5,7 @@ from enum import Enum
 from pathlib import PurePosixPath
 from typing import List, Literal, Optional, Set
 
-from pydantic import ConfigDict, EmailStr, Field, model_validator
+from pydantic import EmailStr, Field, model_validator
 from pydantic_settings import BaseSettings
 
 
@@ -68,8 +68,6 @@ class S3UploadJobConfigs(BaseSettings):
 class S3UploadSubmitJobRequest(BaseSettings):
     """Main request that will be sent to the backend. Bundles jobs into a list
     and allows a user to add an email address to receive notifications."""
-
-    model_config = ConfigDict(use_enum_values=True)
 
     job_type: Literal["s3_upload"] = "s3_upload"
     user_email: Optional[EmailStr] = Field(

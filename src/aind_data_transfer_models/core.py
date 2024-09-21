@@ -21,7 +21,6 @@ from aind_metadata_mapper.models import (
 )
 from aind_slurm_rest import V0036JobProperties
 from pydantic import (
-    ConfigDict,
     EmailStr,
     Field,
     ValidationInfo,
@@ -117,8 +116,6 @@ class ModalityConfigs(BaseSettings):
 
 class BasicUploadJobConfigs(BaseSettings):
     """Configuration for the basic upload job"""
-
-    model_config = ConfigDict(use_enum_values=True)
 
     # Need some way to extract abbreviations. Maybe a public method can be
     # added to the Platform class
