@@ -57,6 +57,7 @@ class TestS3UploadSubmitJobRequest(unittest.TestCase):
                 self.example_archive_configs,
             ]
         )
+        self.assertEqual("s3_upload", submit_job_request.job_type)
         self.assertIsNotNone(submit_job_request)
 
 

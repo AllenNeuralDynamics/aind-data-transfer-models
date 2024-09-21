@@ -530,6 +530,7 @@ class TestSubmitJobRequest(unittest.TestCase):
         self.assertEqual(
             {EmailNotificationType.FAIL}, job_settings.email_notification_types
         )
+        self.assertEqual("transform_and_upload", job_settings.job_type)
 
     def test_non_default_settings(self):
         """Tests user can modify the settings."""

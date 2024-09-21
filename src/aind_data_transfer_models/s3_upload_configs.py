@@ -71,6 +71,7 @@ class S3UploadSubmitJobRequest(BaseSettings):
 
     model_config = ConfigDict(use_enum_values=True)
 
+    job_type: Literal["s3_upload"] = "s3_upload"
     user_email: Optional[EmailStr] = Field(
         default=None,
         description=(
