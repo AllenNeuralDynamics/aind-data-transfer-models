@@ -5,6 +5,7 @@ from enum import Enum
 from pathlib import PurePosixPath
 from typing import List, Literal, Optional, Set
 
+from aind_slurm_rest import V0036JobProperties
 from pydantic import EmailStr, Field, model_validator
 from pydantic_settings import BaseSettings
 
@@ -33,7 +34,7 @@ class S3UploadJobConfigs(BaseSettings):
 
     user_email: Optional[EmailStr] = Field(
         default=None,
-        description=("User email address to send notifications to."),
+        description="User email address to send notifications to.",
     )
     email_notification_types: Optional[Set[EmailNotificationType]] = Field(
         default=None,
@@ -62,6 +63,15 @@ class S3UploadJobConfigs(BaseSettings):
             "Force syncing of data folder even if location exists in cloud"
         ),
         title="Force Cloud Sync",
+    )
+    slurm_settings: Optional[V0036JobProperties] = Field(
+        default=None,
+        description=(
+            "Custom slurm job properties. `environment` is a required field. "
+            "Please set it to an empty dictionary. A downstream process will "
+            "overwrite it."
+        ),
+        title="Slurm Settings",
     )
 
 
