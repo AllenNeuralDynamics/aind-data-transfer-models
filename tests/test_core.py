@@ -97,6 +97,37 @@ class TestModalityConfigs(unittest.TestCase):
         self.assertEqual([1, 1], configs.slurm_settings.nodes)
         self.assertEqual(16, configs.slurm_settings.minimum_cpus_per_node)
 
+    def test_round_trip(self):
+        """Tests model can be deserialized easily"""
+
+        configs = ModalityConfigs(modality=Modality.ECEPHYS, source="dir1")
+        model_json = configs.model_dump_json()
+        deserialized_model = ModalityConfigs.model_validate_json(model_json)
+        self.assertEqual(configs, deserialized_model)
+
+    def test_deserialization_fails(self):
+        """Tests deserialization fails when computed field is incorrect"""
+
+        corrupt_json = json.dumps(
+            {
+                "modality": {
+                    "name": "Extracellular electrophysiology",
+                    "abbreviation": "ecephys",
+                },
+                "source": "dir1",
+                "compress_raw_data": True,
+                "output_folder_name": "incorrect",
+            }
+        )
+        with self.assertRaises(ValidationError) as e:
+            ModalityConfigs.model_validate_json(corrupt_json)
+        errors = json.loads(e.exception.json())
+        expected_msg = (
+            "Value error, output_folder_name incorrect doesn't match ecephys!"
+        )
+        self.assertEqual(1, len(errors))
+        self.assertEqual(expected_msg, errors[0]["msg"])
+
 
 class TestBasicUploadJobConfigs(unittest.TestCase):
     """Tests BasicUploadJobConfigs class"""
@@ -466,6 +497,48 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
             gather_metadata_settings["session_settings"],
             model_json["metadata_configs"]["session_settings"],
         )
+
+    def test_round_trip(self):
+        """Tests model can be serialized and de-serialized easily"""
+        model_json = self.example_configs.model_dump_json()
+        deserialized = BasicUploadJobConfigs.model_validate_json(model_json)
+        self.assertEqual(self.example_configs, deserialized)
+
+    def test_deserialization_fail(self):
+        """Tests deserialization fails with incorrect computed field"""
+        corrupt_json = json.dumps(
+            {
+                "project_name": "Behavior Platform",
+                "s3_bucket": "private",
+                "platform": {
+                    "name": "Behavior platform",
+                    "abbreviation": "behavior",
+                },
+                "modalities": [
+                    {
+                        "modality": {
+                            "name": "Behavior videos",
+                            "abbreviation": "behavior-videos",
+                        },
+                        "source": "dir/data_set_2",
+                        "output_folder_name": "behavior-videos",
+                    }
+                ],
+                "subject_id": "123456",
+                "acq_datetime": "2020-10-13T13:10:10",
+                "metadata_dir": "/some/metadata/dir",
+                "s3_prefix": "incorrect",
+            }
+        )
+        with self.assertRaises(ValidationError) as e:
+            BasicUploadJobConfigs.model_validate_json(corrupt_json)
+        errors = json.loads(e.exception.json())
+        expected_msg = (
+            "Value error, s3_prefix incorrect doesn't match computed "
+            "behavior_123456_2020-10-13_13-10-10!"
+        )
+        self.assertEqual(1, len(errors))
+        self.assertEqual(expected_msg, errors[0]["msg"])
 
 
 class TestSubmitJobRequest(unittest.TestCase):
