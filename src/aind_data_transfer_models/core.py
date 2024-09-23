@@ -128,6 +128,25 @@ class ModalityConfigs(BaseSettings):
         else:
             return False
 
+    @model_validator(mode="before")
+    def check_computed_field(cls, data: Any) -> Any:
+        """If the computed field is present, we check that it's expected. If
+        this validator isn't added, then an 'extra field not allow' error
+        will be raised when serializing and deserializing json."""
+        if (
+            isinstance(data, dict)
+            and data.get("output_folder_name") is not None
+        ):
+            modality = data.get("modality", dict()).get("abbreviation")
+            if modality != data.get("output_folder_name"):
+                raise ValueError(
+                    f"output_folder_name {data.get('output_folder_name')} "
+                    f"doesn't match {modality}!"
+                )
+            else:
+                del data["output_folder_name"]
+        return data
+
 
 class BasicUploadJobConfigs(BaseSettings):
     """Configuration for the basic upload job"""
@@ -239,6 +258,30 @@ class BasicUploadJobConfigs(BaseSettings):
             label=f"{self.platform.abbreviation}_{self.subject_id}",
             creation_datetime=self.acq_datetime,
         )
+
+    @model_validator(mode="before")
+    def check_computed_field(cls, data: Any) -> Any:
+        """If the computed field is present, we check that it's expected. If
+        this validator isn't added, then an 'extra field not allow' error
+        will be raised when serializing and deserializing json."""
+        if isinstance(data, dict) and data.get("s3_prefix") is not None:
+            expected_s3_prefix = build_data_name(
+                label=(
+                    f"{data.get('platform', dict()).get('abbreviation')}"
+                    f"_{data.get('subject_id')}"
+                ),
+                creation_datetime=datetime.fromisoformat(
+                    data.get("acq_datetime")
+                ),
+            )
+            if expected_s3_prefix != data.get("s3_prefix"):
+                raise ValueError(
+                    f"s3_prefix {data.get('s3_prefix')} doesn't match "
+                    f"computed {expected_s3_prefix}!"
+                )
+            else:
+                del data["s3_prefix"]
+        return data
 
     @field_validator("s3_bucket", mode="before")
     def map_bucket(
