@@ -524,6 +524,8 @@ class SubmitJobRequest(S3UploadSubmitJobRequest):
     """Main request that will be sent to the backend. Bundles jobs into a list
     and allows a user to add an email address to receive notifications."""
 
+    model_config = ConfigDict(use_enum_values=True, extra="allow")
+
     job_type: Optional[str] = Field(
         default="transform_and_upload",
         description="Optional tag. Will be made Literal in future versions.",
