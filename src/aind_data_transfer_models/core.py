@@ -56,6 +56,8 @@ class BucketType(str, Enum):
 class ModalityConfigs(BaseSettings):
     """Class to contain configs for each modality type"""
 
+    model_config = ConfigDict(extra="allow")
+
     # Need some way to extract abbreviations. Maybe a public method can be
     # added to the Modality class
     _MODALITY_MAP: ClassVar = {
@@ -151,7 +153,7 @@ class ModalityConfigs(BaseSettings):
 class BasicUploadJobConfigs(BaseSettings):
     """Configuration for the basic upload job"""
 
-    model_config = ConfigDict(use_enum_values=True)
+    model_config = ConfigDict(use_enum_values=True, extra="allow")
 
     # Need some way to extract abbreviations. Maybe a public method can be
     # added to the Platform class
