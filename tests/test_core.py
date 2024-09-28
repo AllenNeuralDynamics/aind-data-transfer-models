@@ -128,6 +128,18 @@ class TestModalityConfigs(unittest.TestCase):
         self.assertEqual(1, len(errors))
         self.assertEqual(expected_msg, errors[0]["msg"])
 
+    def test_extra_allow(self):
+        """Tests that extra fields can be passed into model."""
+        config = ModalityConfigs(
+            modality=Modality.ECEPHYS,
+            source="some_dir",
+            extra_field_1="an extra field",
+        )
+        config_json = config.model_dump_json()
+        self.assertEqual(
+            config, ModalityConfigs.model_validate_json(config_json)
+        )
+
 
 class TestBasicUploadJobConfigs(unittest.TestCase):
     """Tests BasicUploadJobConfigs class"""
@@ -679,6 +691,23 @@ class TestSubmitJobRequest(unittest.TestCase):
         self.assertEqual(
             {"begin", "fail"},
             job_settings.upload_jobs[1].email_notification_types,
+        )
+
+    def test_extra_allow(self):
+        """Tests that extra fields can be passed into model."""
+        config = BasicUploadJobConfigs(
+            project_name="some project",
+            platform=Platform.ECEPHYS,
+            modalities=[
+                ModalityConfigs(modality=Modality.ECEPHYS, source="some_dir")
+            ],
+            subject_id="123456",
+            acq_datetime=datetime(2020, 1, 2, 3, 4, 5),
+            extra_field_1="an extra field",
+        )
+        config_json = config.model_dump_json()
+        self.assertEqual(
+            config, BasicUploadJobConfigs.model_validate_json(config_json)
         )
 
 

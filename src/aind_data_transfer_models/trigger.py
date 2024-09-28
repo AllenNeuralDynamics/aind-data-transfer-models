@@ -25,7 +25,7 @@ class ValidJobType(str, Enum):
 class TriggerConfigModel(BaseSettings):
     """Config to be parsed by the AIND Trigger Capsule."""
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
 
     job_type: ValidJobType = Field(
         description="The type of job to be triggered.",
