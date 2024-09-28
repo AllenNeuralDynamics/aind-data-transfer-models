@@ -535,7 +535,7 @@ class SubmitJobRequest(BaseSettings):
     """Main request that will be sent to the backend. Bundles jobs into a list
     and allows a user to add an email address to receive notifications."""
 
-    model_config = ConfigDict(use_enum_values=True)
+    model_config = ConfigDict(use_enum_values=True, extra="allow")
 
     user_email: Optional[EmailStr] = Field(
         default=None,
