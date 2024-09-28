@@ -162,6 +162,21 @@ class TestTriggerConfigModel(unittest.TestCase):
         assert config.input_data_mount == "0000"
         assert config.process_capsule_id == "0101"
 
+    def test_extra_allow(self):
+        """Tests that extra fields can be passed into model."""
+        config = TriggerConfigModel(
+            job_type="ecephys",
+            input_data_point="0000",
+            input_data_mount=None,
+            capsule_id="0101",
+            process_capsule_id=None,
+            extra_field_1="an extra field",
+        )
+        config_json = config.model_dump_json()
+        self.assertEqual(
+            config, TriggerConfigModel.model_validate_json(config_json)
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
