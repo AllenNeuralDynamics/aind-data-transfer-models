@@ -4,9 +4,8 @@ import logging
 import re
 from copy import deepcopy
 from datetime import datetime
-from enum import Enum
 from pathlib import PurePosixPath
-from typing import Any, ClassVar, List, Optional, Set, Union, get_args
+from typing import Any, ClassVar, List, Literal, Optional, Set, Union, get_args
 
 from aind_data_schema_models.data_name_patterns import build_data_name
 from aind_data_schema_models.modalities import Modality
@@ -32,25 +31,12 @@ from pydantic import (
 )
 from pydantic_settings import BaseSettings
 
+from aind_data_transfer_models.s3_upload_configs import (
+    BucketType,
+    EmailNotificationType,
+    S3UploadSubmitJobRequest,
+)
 from aind_data_transfer_models.trigger import TriggerConfigModel, ValidJobType
-
-
-class EmailNotificationType(str, Enum):
-    """Types of email notifications a user can select"""
-
-    BEGIN = "begin"
-    END = "end"
-    FAIL = "fail"
-    RETRY = "retry"
-    ALL = "all"
-
-
-class BucketType(str, Enum):
-    """Types of s3 bucket users can write to through service"""
-
-    PRIVATE = "private"
-    OPEN = "open"
-    SCRATCH = "scratch"
 
 
 class ModalityConfigs(BaseSettings):
@@ -194,11 +180,14 @@ class BasicUploadJobConfigs(BaseSettings):
         description="(deprecated - set trigger_capsule_configs)",
         title="Process Capsule ID",
     )
-    s3_bucket: BucketType = Field(
+    s3_bucket: Literal[
+        BucketType.PRIVATE, BucketType.OPEN, BucketType.SCRATCH
+    ] = Field(
         BucketType.PRIVATE,
         description=(
             "Bucket where data will be uploaded. If null, will upload to "
-            "default bucket"
+            "default bucket. Uploading to scratch will be deprecated in "
+            "future versions."
         ),
         title="S3 Bucket",
     )
@@ -531,41 +520,20 @@ class BasicUploadJobConfigs(BaseSettings):
         return validated_self
 
 
-class SubmitJobRequest(BaseSettings):
+class SubmitJobRequest(S3UploadSubmitJobRequest):
     """Main request that will be sent to the backend. Bundles jobs into a list
     and allows a user to add an email address to receive notifications."""
 
     model_config = ConfigDict(use_enum_values=True, extra="allow")
 
-    user_email: Optional[EmailStr] = Field(
-        default=None,
-        description=(
-            "Optional email address to receive job status notifications"
-        ),
+    job_type: Optional[str] = Field(
+        default="transform_and_upload",
+        description="Optional tag. Will be made Literal in future versions.",
     )
-    email_notification_types: Set[EmailNotificationType] = Field(
-        default={EmailNotificationType.FAIL},
-        description=(
-            "Types of job statuses to receive email notifications about"
-        ),
-    )
+
     upload_jobs: List[BasicUploadJobConfigs] = Field(
         ...,
         description="List of upload jobs to process. Max of 1000 at a time.",
         min_items=1,
         max_items=1000,
     )
-
-    @model_validator(mode="after")
-    def propagate_email_settings(self):
-        """Propagate email settings from global to individual jobs"""
-        global_email_user = self.user_email
-        global_email_notification_types = self.email_notification_types
-        for upload_job in self.upload_jobs:
-            if global_email_user is not None and upload_job.user_email is None:
-                upload_job.user_email = global_email_user
-            if upload_job.email_notification_types is None:
-                upload_job.email_notification_types = (
-                    global_email_notification_types
-                )
-        return self

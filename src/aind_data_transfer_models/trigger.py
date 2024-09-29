@@ -96,7 +96,7 @@ class TriggerConfigModel(BaseSettings):
         default=None,
     )
     modalities: Optional[List[Modality.ONE_OF]] = Field(
-        description=("(deprecated - use 'job_type')."),
+        description="(deprecated - use 'job_type').",
         default=None,
     )
     capsule_id: Optional[str] = Field(

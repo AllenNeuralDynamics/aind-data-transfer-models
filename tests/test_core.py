@@ -22,10 +22,12 @@ from pydantic import ValidationError
 
 from aind_data_transfer_models.core import (
     BasicUploadJobConfigs,
-    BucketType,
-    EmailNotificationType,
     ModalityConfigs,
     SubmitJobRequest,
+)
+from aind_data_transfer_models.s3_upload_configs import (
+    BucketType,
+    EmailNotificationType,
 )
 from aind_data_transfer_models.trigger import TriggerConfigModel, ValidJobType
 
@@ -613,6 +615,7 @@ class TestSubmitJobRequest(unittest.TestCase):
         self.assertEqual(
             {EmailNotificationType.FAIL}, job_settings.email_notification_types
         )
+        self.assertEqual("transform_and_upload", job_settings.job_type)
 
     def test_non_default_settings(self):
         """Tests user can modify the settings."""
