@@ -160,8 +160,8 @@ class TestModalityConfigs(unittest.TestCase):
         )
 
     def test_extra_configs_json_error(self):
-        """Tests validation error raised if user sets both extra_configs and
-        extra_configs_dict fields."""
+        """Tests validation error raised if passes in dictionary that is not
+        json serializable."""
 
         with self.assertRaises(ValidationError) as e:
             ModalityConfigs(
