@@ -1,5 +1,6 @@
 """Core models for using aind-data-transfer-service"""
 
+import json
 import logging
 import re
 from copy import deepcopy
@@ -27,7 +28,7 @@ from pydantic import (
     ValidationInfo,
     computed_field,
     field_validator,
-    model_validator, Json,
+    model_validator,
 )
 from pydantic_settings import BaseSettings
 
@@ -72,10 +73,13 @@ class ModalityConfigs(BaseSettings):
         ),
         title="Extra Configs",
     )
-    extra_configs_json: Optional[Json] = Field(
+    extra_configs_dict: Optional[dict] = Field(
         default=None,
-        description="Configs to pass into modality compression job.",
-        title="Extra Configs Json"
+        description=(
+            "Configs to pass into modality compression job. Must be json "
+            "serializable."
+        ),
+        title="Extra Configs Dictionary",
     )
     slurm_settings: Optional[V0036JobProperties] = Field(
         default=None,
@@ -144,11 +148,21 @@ class ModalityConfigs(BaseSettings):
 
     @model_validator(mode="after")
     def check_modality_configs(self):
-        """Verifies only one of extra_configs or extra_configs_json set."""
-        if self.extra_configs_json is not None and self.extra_configs is not None:
+        """Verifies only one of extra_configs or extra_configs_dict set."""
+        if (
+            self.extra_configs_dict is not None
+            and self.extra_configs is not None
+        ):
             raise ValueError(
-                "Only extra_configs_json or extra_configs should be set!"
+                "Only extra_configs_dict or extra_configs should be set!"
             )
+        elif self.extra_configs_dict is not None:
+            try:
+                json.dumps(self.extra_configs_dict)
+            except Exception as e:
+                raise ValueError(
+                    f"extra_configs_dict must be json serializable! {e}"
+                )
         return self
 
 
