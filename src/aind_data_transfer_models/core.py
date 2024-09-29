@@ -27,7 +27,7 @@ from pydantic import (
     ValidationInfo,
     computed_field,
     field_validator,
-    model_validator,
+    model_validator, Json,
 )
 from pydantic_settings import BaseSettings
 
@@ -67,8 +67,15 @@ class ModalityConfigs(BaseSettings):
     )
     extra_configs: Optional[PurePosixPath] = Field(
         default=None,
-        description="Location of additional configuration file",
+        description=(
+            "Location of additional configuration file for compression job."
+        ),
         title="Extra Configs",
+    )
+    extra_configs_json: Optional[Json] = Field(
+        default=None,
+        description="Configs to pass into modality compression job.",
+        title="Extra Configs Json"
     )
     slurm_settings: Optional[V0036JobProperties] = Field(
         default=None,
@@ -134,6 +141,15 @@ class ModalityConfigs(BaseSettings):
             else:
                 del data["output_folder_name"]
         return data
+
+    @model_validator(mode="after")
+    def check_modality_configs(self):
+        """Verifies only one of extra_configs or extra_configs_json set."""
+        if self.extra_configs_json is not None and self.extra_configs is not None:
+            raise ValueError(
+                "Only extra_configs_json or extra_configs should be set!"
+            )
+        return self
 
 
 class BasicUploadJobConfigs(BaseSettings):
