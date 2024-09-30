@@ -73,13 +73,13 @@ class ModalityConfigs(BaseSettings):
         ),
         title="Extra Configs",
     )
-    extra_configs_dict: Optional[dict] = Field(
+    job_settings: Optional[dict] = Field(
         default=None,
         description=(
             "Configs to pass into modality compression job. Must be json "
             "serializable."
         ),
-        title="Extra Configs Dictionary",
+        title="Job Settings",
     )
     slurm_settings: Optional[V0036JobProperties] = Field(
         default=None,
@@ -148,20 +148,17 @@ class ModalityConfigs(BaseSettings):
 
     @model_validator(mode="after")
     def check_modality_configs(self):
-        """Verifies only one of extra_configs or extra_configs_dict set."""
-        if (
-            self.extra_configs_dict is not None
-            and self.extra_configs is not None
-        ):
+        """Verifies only one of extra_configs or job_settings set."""
+        if self.job_settings is not None and self.extra_configs is not None:
             raise ValueError(
-                "Only extra_configs_dict or extra_configs should be set!"
+                "Only job_settings or extra_configs should be set!"
             )
-        elif self.extra_configs_dict is not None:
+        elif self.job_settings is not None:
             try:
-                json.dumps(self.extra_configs_dict)
+                json.dumps(self.job_settings)
             except Exception as e:
                 raise ValueError(
-                    f"extra_configs_dict must be json serializable! {e}"
+                    f"job_settings must be json serializable! {e}"
                 )
         return self
 
