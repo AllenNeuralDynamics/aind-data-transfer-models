@@ -140,6 +140,42 @@ class TestModalityConfigs(unittest.TestCase):
             config, ModalityConfigs.model_validate_json(config_json)
         )
 
+    def test_extra_configs_error(self):
+        """Tests validation error raised if user sets both extra_configs and
+        job_settings fields."""
+
+        with self.assertRaises(ValidationError) as e:
+            ModalityConfigs(
+                modality=Modality.ECEPHYS,
+                source="some_dir",
+                extra_configs="some_dir",
+                job_settings={"param1": 3, "param2": "abc"},
+            )
+        errors = e.exception.errors()
+        self.assertEqual(1, len(errors))
+        self.assertEqual(
+            "Value error, Only job_settings or "
+            "extra_configs should be set!",
+            errors[0]["msg"],
+        )
+
+    def test_extra_configs_json_error(self):
+        """Tests validation error raised if passes in dictionary that is not
+        json serializable."""
+
+        with self.assertRaises(ValidationError) as e:
+            ModalityConfigs(
+                modality=Modality.ECEPHYS,
+                source="some_dir",
+                job_settings={"param1": list},
+            )
+        expected_error_message_snippet = (
+            "Value error, job_settings must be json serializable!"
+        )
+        errors = e.exception.errors()
+        self.assertEqual(1, len(errors))
+        self.assertTrue(expected_error_message_snippet in errors[0]["msg"])
+
 
 class TestBasicUploadJobConfigs(unittest.TestCase):
     """Tests BasicUploadJobConfigs class"""
