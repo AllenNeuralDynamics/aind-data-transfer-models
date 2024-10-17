@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path, PurePosixPath
 from unittest.mock import MagicMock, patch
 
+from aind_codeocean_pipeline_monitor.models import PipelineMonitorSettings
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.platforms import Platform
 from aind_metadata_mapper.models import BergamoSessionJobSettings
@@ -18,10 +19,12 @@ from aind_metadata_mapper.models import (
     SubjectSettings,
 )
 from aind_slurm_rest import V0036JobProperties
+from codeocean.computation import RunParams
 from pydantic import ValidationError
 
 from aind_data_transfer_models.core import (
     BasicUploadJobConfigs,
+    CodeOceanPipelineMonitorConfigs,
     ModalityConfigs,
     SubmitJobRequest,
 )
@@ -139,6 +142,42 @@ class TestModalityConfigs(unittest.TestCase):
         self.assertEqual(
             config, ModalityConfigs.model_validate_json(config_json)
         )
+
+
+class TestCodeOceanPipelineMonitorConfigs(unittest.TestCase):
+    """Tests CodeOceanPipelineMonitorConfigs class"""
+
+    def test_basic_class(self):
+        """Tests basic class serialization round trip"""
+        codeocean_configs = CodeOceanPipelineMonitorConfigs(
+            pipeline_monitor_capsule_settings=[
+                PipelineMonitorSettings(
+                    run_params=RunParams(
+                        pipeline_id="123-abc", parameters=["param1", "param2"]
+                    )
+                )
+            ],
+            additional_raw_data_tags=["custom1", "custom2"],
+            raw_data_mount="custom_mount",
+        )
+        expected_json = {
+            "pipeline_monitor_capsule_settings": [
+                {
+                    "run_params": {
+                        "pipeline_id": "123-abc",
+                        "parameters": ["param1", "param2"],
+                    }
+                }
+            ],
+            "additional_raw_data_tags": ["custom1", "custom2"],
+            "raw_data_mount": "custom_mount",
+        }
+        expected_deser_model = (
+            CodeOceanPipelineMonitorConfigs.model_validate_json(
+                json.dumps(expected_json)
+            )
+        )
+        self.assertEqual(codeocean_configs, expected_deser_model)
 
 
 class TestBasicUploadJobConfigs(unittest.TestCase):
@@ -709,6 +748,34 @@ class TestSubmitJobRequest(unittest.TestCase):
         self.assertEqual(
             config, BasicUploadJobConfigs.model_validate_json(config_json)
         )
+
+    def test_codeocean_configs(self):
+        """Tests user defined codeocean_configs"""
+        codeocean_configs = CodeOceanPipelineMonitorConfigs(
+            pipeline_monitor_capsule_settings=[
+                PipelineMonitorSettings(
+                    run_params=RunParams(
+                        pipeline_id="123-abc", parameters=["param1", "param2"]
+                    )
+                )
+            ],
+            additional_raw_data_tags=["custom1", "custom2"],
+            raw_data_mount="custom_mount",
+        )
+        config = BasicUploadJobConfigs(
+            project_name="some project",
+            platform=Platform.ECEPHYS,
+            modalities=[
+                ModalityConfigs(modality=Modality.ECEPHYS, source="some_dir")
+            ],
+            subject_id="123456",
+            acq_datetime=datetime(2020, 1, 2, 3, 4, 5),
+            codeocean_configs=codeocean_configs,
+        )
+
+        config_json = config.model_dump_json(exclude_none=True)
+        deser_model = BasicUploadJobConfigs.model_validate_json(config_json)
+        self.assertEqual(config, deser_model)
 
 
 if __name__ == "__main__":

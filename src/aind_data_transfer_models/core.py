@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import PurePosixPath
 from typing import Any, ClassVar, List, Literal, Optional, Set, Union, get_args
 
+from aind_codeocean_pipeline_monitor.models import PipelineMonitorSettings
 from aind_data_schema_models.data_name_patterns import build_data_name
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.platforms import Platform
@@ -136,6 +137,53 @@ class ModalityConfigs(BaseSettings):
         return data
 
 
+class CodeOceanPipelineMonitorConfigs(BaseSettings):
+    """
+    Configs for handling registering data to Code Ocean and requesting
+    Code Ocean pipelines to run on the newly registered data. The transfer
+    service will provide defaults, but users can customize these settings if
+    they wish.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    pipeline_monitor_capsule_id: Optional[str] = Field(
+        default=None,
+        description=(
+            "If set to None, then default will be used. If set to an empty "
+            "string, then no request will be sent. If set to a non-empty "
+            "string, will use the user provided value."
+        ),
+    )
+    pipeline_monitor_capsule_settings: Optional[
+        List[PipelineMonitorSettings]
+    ] = Field(
+        default=None,
+        description=(
+            "If set to None, then defaults will be used. If set to an empty "
+            "list, then no request will be sent. If set to a non-empty list, "
+            "will use the user provided values and will not use any defaults. "
+            "A max of 5 pipelines can be requested. Please talk to an admin "
+            "if more are needed."
+        ),
+        max_items=5,
+    )
+    additional_raw_data_tags: List[str] = Field(
+        default=[],
+        description=(
+            "Certain tags will be attached to raw data assets registered to "
+            "Code Ocean. Max 10. Please talk to an admin if more are needed."
+        ),
+        max_items=10,
+    )
+    raw_data_mount: Optional[str] = Field(
+        default=None,
+        description=(
+            "If None, then will set the mount to the data asset name."
+        ),
+    )
+
+
 class BasicUploadJobConfigs(BaseSettings):
     """Configuration for the basic upload job"""
 
@@ -235,11 +283,18 @@ class BasicUploadJobConfigs(BaseSettings):
     trigger_capsule_configs: Optional[TriggerConfigModel] = Field(
         default=None,
         description=(
-            "Settings for the codeocean trigger capsule. "
-            "Validators will set defaults."
+            "(deprecated. Use codeocean_configs) Settings for the codeocean "
+            "trigger capsule. Validators will set defaults."
         ),
-        title="Trigger Capsule Configs",
+        title="Trigger Capsule Configs (deprecated. Use codeocean_configs)",
         validate_default=True,
+    )
+    codeocean_configs: CodeOceanPipelineMonitorConfigs = Field(
+        default=CodeOceanPipelineMonitorConfigs(),
+        description=(
+            "User can pass custom fields. Otherwise, transfer service will "
+            "handle setting default values at runtime."
+        ),
     )
 
     @computed_field
