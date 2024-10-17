@@ -5,14 +5,25 @@ import re
 from copy import deepcopy
 from datetime import datetime
 from pathlib import PurePosixPath
-from typing import Any, ClassVar, List, Literal, Optional, Set, Union, \
-    get_args, Dict
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Set,
+    Union,
+    get_args,
+)
 
 from aind_codeocean_pipeline_monitor.models import PipelineMonitorSettings
-from aind_data_schema_models.data_name_patterns import build_data_name
+from aind_data_schema_models.data_name_patterns import (
+    DataLevel,
+    build_data_name,
+)
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.platforms import Platform
-from aind_data_schema_models.data_name_patterns import DataLevel
 from aind_metadata_mapper.models import (
     JobSettings as GatherMetadataJobSettings,
 )
