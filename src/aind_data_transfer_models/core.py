@@ -147,6 +147,14 @@ class CodeOceanPipelineMonitorConfigs(BaseSettings):
 
     model_config = ConfigDict(extra="allow")
 
+    job_type: Optional[str] = Field(
+        default=None,
+        description=(
+            "Legacy field that may be deprecated in the future. Determines "
+            "which default processing pipeline(s) will be run in Code Ocean. "
+            "A list will be made available in the transfer service UI."
+        )
+    )
     pipeline_monitor_capsule_id: Optional[str] = Field(
         default=None,
         description=(
