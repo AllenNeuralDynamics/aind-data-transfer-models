@@ -5,12 +5,14 @@ import re
 from copy import deepcopy
 from datetime import datetime
 from pathlib import PurePosixPath
-from typing import Any, ClassVar, List, Literal, Optional, Set, Union, get_args
+from typing import Any, ClassVar, List, Literal, Optional, Set, Union, \
+    get_args, Dict
 
 from aind_codeocean_pipeline_monitor.models import PipelineMonitorSettings
 from aind_data_schema_models.data_name_patterns import build_data_name
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.platforms import Platform
+from aind_data_schema_models.data_name_patterns import DataLevel
 from aind_metadata_mapper.models import (
     JobSettings as GatherMetadataJobSettings,
 )
@@ -176,19 +178,22 @@ class CodeOceanPipelineMonitorConfigs(BaseSettings):
         ),
         max_items=5,
     )
-    additional_raw_data_tags: List[str] = Field(
-        default=[],
+    raw_data_tags: List[str] = Field(
+        default=[DataLevel.RAW.value],
         description=(
-            "Certain tags will be attached to raw data assets registered to "
+            "The data level, subject id, and platform will always be "
+            "attached. Certain tags will be attached to raw data assets "
+            "registered to "
             "Code Ocean. Max 10. Please talk to an admin if more are needed."
         ),
         max_items=10,
     )
-    custom_codeocean_metadata: Optional[dict] = Field(
-        default=None,
+    custom_codeocean_metadata: Optional[Dict[str, str]] = Field(
+        default={"data level": DataLevel.DERIVED.value},
         description=(
-            "If set to None, defaults will be used. The shape of the "
-            "dictionary is strict, but not documented yet."
+            "The fields 'subject id' and 'experiment type' will be attached "
+            "dynamically. The shape of the dictionary is strict, but not"
+            "documented yet."
         ),
     )
     raw_data_mount: Optional[str] = Field(
