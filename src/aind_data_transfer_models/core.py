@@ -184,6 +184,13 @@ class CodeOceanPipelineMonitorConfigs(BaseSettings):
         ),
         max_items=10,
     )
+    custom_codeocean_metadata: Optional[dict] = Field(
+        default = None,
+        description=(
+            "If set to None, defaults will be used. The shape of the "
+            "dictionary is strict, but not documented yet."
+        )
+    )
     raw_data_mount: Optional[str] = Field(
         default=None,
         description=(
