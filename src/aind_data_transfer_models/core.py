@@ -1,5 +1,6 @@
 """Core models for using aind-data-transfer-service"""
 
+import json
 import logging
 import re
 from copy import deepcopy
@@ -67,8 +68,18 @@ class ModalityConfigs(BaseSettings):
     )
     extra_configs: Optional[PurePosixPath] = Field(
         default=None,
-        description="Location of additional configuration file",
+        description=(
+            "Location of additional configuration file for compression job."
+        ),
         title="Extra Configs",
+    )
+    job_settings: Optional[dict] = Field(
+        default=None,
+        description=(
+            "Configs to pass into modality compression job. Must be json "
+            "serializable."
+        ),
+        title="Job Settings",
     )
     slurm_settings: Optional[V0036JobProperties] = Field(
         default=None,
@@ -134,6 +145,22 @@ class ModalityConfigs(BaseSettings):
             else:
                 del data["output_folder_name"]
         return data
+
+    @model_validator(mode="after")
+    def check_modality_configs(self):
+        """Verifies only one of extra_configs or job_settings set."""
+        if self.job_settings is not None and self.extra_configs is not None:
+            raise ValueError(
+                "Only job_settings or extra_configs should be set!"
+            )
+        elif self.job_settings is not None:
+            try:
+                json.dumps(self.job_settings)
+            except Exception as e:
+                raise ValueError(
+                    f"job_settings must be json serializable! {e}"
+                )
+        return self
 
 
 class BasicUploadJobConfigs(BaseSettings):
