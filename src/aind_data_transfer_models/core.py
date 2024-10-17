@@ -153,7 +153,7 @@ class CodeOceanPipelineMonitorConfigs(BaseSettings):
             "Legacy field that may be deprecated in the future. Determines "
             "which default processing pipeline(s) will be run in Code Ocean. "
             "A list will be made available in the transfer service UI."
-        )
+        ),
     )
     pipeline_monitor_capsule_id: Optional[str] = Field(
         default=None,
@@ -185,11 +185,11 @@ class CodeOceanPipelineMonitorConfigs(BaseSettings):
         max_items=10,
     )
     custom_codeocean_metadata: Optional[dict] = Field(
-        default = None,
+        default=None,
         description=(
             "If set to None, defaults will be used. The shape of the "
             "dictionary is strict, but not documented yet."
-        )
+        ),
     )
     raw_data_mount: Optional[str] = Field(
         default=None,
