@@ -591,6 +591,66 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
         self.assertEqual(1, len(errors))
         self.assertEqual(expected_msg, errors[0]["msg"])
 
+    def test_set_codeocean_configs(self):
+        """Tests that the codeocean defaults are set."""
+        expected_codeocean_configs = {
+            "job_type": "behavior",
+            "pipeline_monitor_capsule_id": None,
+            "pipeline_monitor_capsule_settings": None,
+            "raw_data_tags": ["123456", "behavior", "raw"],
+            "custom_raw_codeocean_metadata": {
+                "data level": "raw",
+                "experiment type": "behavior",
+                "subject id": "123456",
+            },
+            "raw_data_mount": "behavior_123456_2020-10-13_13-10-10",
+        }
+        self.assertEqual(
+            expected_codeocean_configs,
+            json.loads(
+                self.example_configs.codeocean_configs.model_dump_json()
+            ),
+        )
+
+    def test_set_codeocean_configs_override(self):
+        """Tests that the codeocean defaults are set with custom settings."""
+
+        example_configs = BasicUploadJobConfigs(
+            project_name="Behavior Platform",
+            s3_bucket="some_bucket2",
+            platform=Platform.BEHAVIOR,
+            modalities=[
+                ModalityConfigs(
+                    modality=Modality.BEHAVIOR_VIDEOS,
+                    source=(PurePosixPath("dir") / "data_set_2"),
+                ),
+            ],
+            subject_id="123456",
+            acq_datetime=datetime(2020, 10, 13, 13, 10, 10),
+            metadata_dir="/some/metadata/dir/",
+            metadata_dir_force=False,
+            force_cloud_sync=False,
+            codeocean_configs=CodeOceanPipelineMonitorConfigs(
+                raw_data_tags=[], custom_raw_codeocean_metadata=dict()
+            ),
+        )
+
+        expected_codeocean_configs = {
+            "job_type": "behavior",
+            "pipeline_monitor_capsule_id": None,
+            "pipeline_monitor_capsule_settings": None,
+            "raw_data_tags": ["123456", "behavior"],
+            "custom_raw_codeocean_metadata": {
+                "experiment type": "behavior",
+                "subject id": "123456",
+            },
+            "raw_data_mount": "behavior_123456_2020-10-13_13-10-10",
+        }
+        self.assertEqual(
+            expected_codeocean_configs,
+            json.loads(example_configs.codeocean_configs.model_dump_json()),
+        )
+
 
 class TestSubmitJobRequest(unittest.TestCase):
     """Tests SubmitJobRequest class"""

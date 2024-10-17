@@ -165,7 +165,8 @@ class CodeOceanPipelineMonitorConfigs(BaseSettings):
         description=(
             "Legacy field that may be deprecated in the future. Determines "
             "which default processing pipeline(s) will be run in Code Ocean. "
-            "A list will be made available in the transfer service UI."
+            "A list will be made available in the transfer service UI. "
+            "If None, then platform abbreviation will be used."
         ),
     )
     pipeline_monitor_capsule_id: Optional[str] = Field(
@@ -181,26 +182,25 @@ class CodeOceanPipelineMonitorConfigs(BaseSettings):
     ] = Field(
         default=None,
         description=(
-            "If set to None, then defaults will be used. If set to an empty "
-            "list, then no request will be sent. If set to a non-empty list, "
-            "will use the user provided values and will not use any defaults. "
-            "A max of 5 pipelines can be requested. Please talk to an admin "
-            "if more are needed."
+            "If set to None, then defaults for job_type will be used. If set "
+            "to an empty list, then no request will be sent. If set to a "
+            "non-empty list, will use the user provided values and will not "
+            "use any defaults. A max of 5 pipelines can be requested. Please "
+            "talk to an admin if more are needed."
         ),
         max_items=5,
     )
     raw_data_tags: List[str] = Field(
         default=[DataLevel.RAW.value],
         description=(
-            "The data level, subject id, and platform will always be "
-            "attached. Certain tags will be attached to raw data assets "
-            "registered to "
-            "Code Ocean. Max 10. Please talk to an admin if more are needed."
+            "The subject id, and platform will always be attached to raw data "
+            "registered to Code Ocean. Max 10. Please talk to an admin if "
+            "more are needed."
         ),
         max_items=10,
     )
-    custom_codeocean_metadata: Optional[Dict[str, str]] = Field(
-        default={"data level": DataLevel.DERIVED.value},
+    custom_raw_codeocean_metadata: Dict[str, str] = Field(
+        default={"data level": DataLevel.RAW.value},
         description=(
             "The fields 'subject id' and 'experiment type' will be attached "
             "dynamically. The shape of the dictionary is strict, but not"
@@ -209,9 +209,7 @@ class CodeOceanPipelineMonitorConfigs(BaseSettings):
     )
     raw_data_mount: Optional[str] = Field(
         default=None,
-        description=(
-            "If None, then will set the mount to the data asset name."
-        ),
+        description="If None, then will set the mount to the s3_prefix.",
     )
 
 
@@ -604,6 +602,35 @@ class BasicUploadJobConfigs(BaseSettings):
             )
         )
         return validated_self
+
+    @model_validator(mode="after")
+    def set_codeocean_configs(self):
+        """Merge user defined fields with some defaults."""
+        default_raw_data_tags = [
+            self.platform.abbreviation,
+            self.subject_id,
+        ]
+        user_tags = self.codeocean_configs.raw_data_tags
+        merged_tags = list(set(default_raw_data_tags).union(user_tags))
+        self.codeocean_configs.raw_data_tags = sorted(merged_tags)
+        default_raw_custom_metadata = {
+            "experiment type": self.platform.abbreviation,
+            "subject id": self.subject_id,
+        }
+        user_raw_custom_metadata = (
+            self.codeocean_configs.custom_raw_codeocean_metadata
+        )
+        user_raw_custom_metadata.update(default_raw_custom_metadata)
+        self.codeocean_configs.custom_raw_codeocean_metadata = (
+            user_raw_custom_metadata
+        )
+        if self.codeocean_configs.raw_data_mount is None:
+            self.codeocean_configs.raw_data_mount = self.s3_prefix
+
+        # For legacy behavior, this may be removed in the future
+        if self.codeocean_configs.job_type is None:
+            self.codeocean_configs.job_type = self.platform.abbreviation
+        return self
 
 
 class SubmitJobRequest(S3UploadSubmitJobRequest):
