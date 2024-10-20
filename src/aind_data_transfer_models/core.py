@@ -8,7 +8,10 @@ from datetime import datetime
 from pathlib import PurePosixPath
 from typing import Any, ClassVar, List, Literal, Optional, Set, Union, get_args
 
-from aind_codeocean_pipeline_monitor.models import PipelineMonitorSettings
+from aind_codeocean_pipeline_monitor.models import (
+    CaptureSettings,
+    PipelineMonitorSettings,
+)
 from aind_data_schema_models.data_name_patterns import (
     DataLevel,
     build_data_name,
@@ -25,6 +28,7 @@ from aind_metadata_mapper.models import (
     SubjectSettings,
 )
 from aind_slurm_rest import V0036JobProperties
+from codeocean.computation import DataAssetsRunParam, RunParams
 from codeocean.data_asset import AWSS3Source, DataAssetParams, Source
 from pydantic import (
     ConfigDict,
@@ -268,12 +272,12 @@ class BasicUploadJobConfigs(BaseSettings):
     )
     input_data_mount: Optional[str] = Field(
         default=None,
-        description="(deprecated - set trigger_capsule_configs)",
+        description="(deprecated - set codeocean_configs)",
         title="Input Data Mount",
     )
     process_capsule_id: Optional[str] = Field(
         None,
-        description="(deprecated - set trigger_capsule_configs)",
+        description="(deprecated - set codeocean_configs)",
         title="Process Capsule ID",
     )
     s3_bucket: Literal[
@@ -670,6 +674,46 @@ class BasicUploadJobConfigs(BaseSettings):
         # For legacy behavior, this may be removed in the future
         if self.codeocean_configs.job_type is None:
             self.codeocean_configs.job_type = self.platform.abbreviation
+        return self
+
+    @model_validator(mode="after")
+    def map_legacy_codeocean_configs(self):
+        """Maps legacy fields input_data_mount and process_capsule_id to
+        codeocean_configs."""
+
+        if (
+            self.process_capsule_id is not None
+            and self.codeocean_configs.pipeline_monitor_capsule_settings
+            is None
+        ):
+            if self.input_data_mount is not None:
+                input_data_mount = self.input_data_mount
+            else:
+                input_data_mount = self.s3_prefix
+            run_params = RunParams(
+                capsule_id=self.process_capsule_id,
+                data_assets=[
+                    DataAssetsRunParam(id="", mount=input_data_mount)
+                ],
+            )
+            capture_settings = CaptureSettings(
+                tags=[
+                    DataLevel.DERIVED.value,
+                    self.subject_id,
+                    self.platform.abbreviation,
+                ],
+                custom_metadata={
+                    "experiment type": self.platform.abbreviation,
+                    "subject id": self.subject_id,
+                    "data level": DataLevel.DERIVED.value,
+                },
+            )
+            pipeline_monitor_settings = PipelineMonitorSettings(
+                run_params=run_params, capture_settings=capture_settings
+            )
+            self.codeocean_configs.pipeline_monitor_capsule_settings = [
+                pipeline_monitor_settings
+            ]
         return self
 
 
