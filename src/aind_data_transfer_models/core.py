@@ -6,17 +6,7 @@ import re
 from copy import deepcopy
 from datetime import datetime
 from pathlib import PurePosixPath
-from typing import (
-    Any,
-    ClassVar,
-    Dict,
-    List,
-    Literal,
-    Optional,
-    Set,
-    Union,
-    get_args,
-)
+from typing import Any, ClassVar, List, Literal, Optional, Set, Union, get_args
 
 from aind_codeocean_pipeline_monitor.models import PipelineMonitorSettings
 from aind_data_schema_models.data_name_patterns import (
@@ -35,6 +25,7 @@ from aind_metadata_mapper.models import (
     SubjectSettings,
 )
 from aind_slurm_rest import V0036JobProperties
+from codeocean.data_asset import AWSS3Source, DataAssetParams, Source
 from pydantic import (
     ConfigDict,
     EmailStr,
@@ -217,27 +208,28 @@ class CodeOceanPipelineMonitorConfigs(BaseSettings):
         ),
         max_items=5,
     )
-    raw_data_tags: List[str] = Field(
-        default=[DataLevel.RAW.value],
-        description=(
-            "The subject id, and platform will always be attached to raw data "
-            "registered to Code Ocean. Max 10. Please talk to an admin if "
-            "more are needed."
+    register_data_settings: DataAssetParams = Field(
+        default=DataAssetParams(
+            name="",
+            mount="",
+            tags=[DataLevel.RAW.value],
+            custom_metadata={"data level": DataLevel.RAW.value},
         ),
-        max_items=10,
-    )
-    custom_raw_codeocean_metadata: Dict[str, str] = Field(
-        default={"data level": DataLevel.RAW.value},
         description=(
-            "The fields 'subject id' and 'experiment type' will be attached "
-            "dynamically. The shape of the dictionary is strict, but not"
-            "documented yet."
+            "If empty strings, then the name and mount will be set to the "
+            "s3_prefix automatically by a validator. A validator will also "
+            "automatically set the source. A validator will also add the "
+            "subject_id and platform to the tags and custom_metadata."
         ),
+        validate_default=True,
     )
-    raw_data_mount: Optional[str] = Field(
-        default=None,
-        description="If None, then will set the mount to the s3_prefix.",
-    )
+
+    @field_validator("register_data_settings", mode="after")
+    def verify_tags(cls, v: DataAssetParams) -> DataAssetParams:
+        """Verifies tags has no more than 10 items."""
+        if len(v.tags) > 10:
+            raise ValueError("Tags can only have a max of 10 items!")
+        return v
 
 
 class BasicUploadJobConfigs(BaseSettings):
@@ -633,26 +625,47 @@ class BasicUploadJobConfigs(BaseSettings):
     @model_validator(mode="after")
     def set_codeocean_configs(self):
         """Merge user defined fields with some defaults."""
-        default_raw_data_tags = [
+        default_data_tags = [
             self.platform.abbreviation,
             self.subject_id,
         ]
-        user_tags = self.codeocean_configs.raw_data_tags
-        merged_tags = list(set(default_raw_data_tags).union(user_tags))
-        self.codeocean_configs.raw_data_tags = sorted(merged_tags)
+        user_tags = self.codeocean_configs.register_data_settings.tags
+        merged_tags = sorted(list(set(default_data_tags).union(user_tags)))
         default_raw_custom_metadata = {
             "experiment type": self.platform.abbreviation,
             "subject id": self.subject_id,
         }
-        user_raw_custom_metadata = (
-            self.codeocean_configs.custom_raw_codeocean_metadata
+        co_custom_metadata = (
+            self.codeocean_configs.register_data_settings.custom_metadata
         )
-        user_raw_custom_metadata.update(default_raw_custom_metadata)
-        self.codeocean_configs.custom_raw_codeocean_metadata = (
-            user_raw_custom_metadata
+        co_custom_metadata.update(default_raw_custom_metadata)
+        is_public = self.s3_bucket == BucketType.OPEN
+        if self.codeocean_configs.register_data_settings.name == "":
+            name = self.s3_prefix
+        else:
+            name = self.codeocean_configs.register_data_settings.name
+        if self.codeocean_configs.register_data_settings.mount == "":
+            mount = self.s3_prefix
+        else:
+            mount = self.codeocean_configs.register_data_settings.mount
+        source = Source(
+            aws=AWSS3Source(
+                bucket=self.s3_bucket,  # Actual bucket is mapped by service
+                prefix=self.s3_prefix,
+                keep_on_external_storage=True,
+                public=is_public,
+            )
         )
-        if self.codeocean_configs.raw_data_mount is None:
-            self.codeocean_configs.raw_data_mount = self.s3_prefix
+        description = self.codeocean_configs.register_data_settings.description
+        register_data_settings = DataAssetParams(
+            name=name,
+            tags=merged_tags,
+            mount=mount,
+            description=description,
+            source=source,
+            custom_metadata=co_custom_metadata,
+        )
+        self.codeocean_configs.register_data_settings = register_data_settings
 
         # For legacy behavior, this may be removed in the future
         if self.codeocean_configs.job_type is None:

@@ -20,6 +20,7 @@ from aind_metadata_mapper.models import (
 )
 from aind_slurm_rest import V0036JobProperties
 from codeocean.computation import RunParams
+from codeocean.data_asset import DataAssetParams
 from pydantic import ValidationError
 
 from aind_data_transfer_models.core import (
@@ -193,8 +194,11 @@ class TestCodeOceanPipelineMonitorConfigs(unittest.TestCase):
                     )
                 )
             ],
-            additional_raw_data_tags=["custom1", "custom2"],
-            raw_data_mount="custom_mount",
+            register_data_settings=DataAssetParams(
+                name="custom_name",
+                mount="custom_mount",
+                tags=["custom1", "custom2"],
+            ),
         )
         expected_json = {
             "pipeline_monitor_capsule_settings": [
@@ -205,8 +209,11 @@ class TestCodeOceanPipelineMonitorConfigs(unittest.TestCase):
                     }
                 }
             ],
-            "additional_raw_data_tags": ["custom1", "custom2"],
-            "raw_data_mount": "custom_mount",
+            "register_data_settings": {
+                "name": "custom_name",
+                "tags": ["custom1", "custom2"],
+                "mount": "custom_mount",
+            },
         }
         expected_deser_model = (
             CodeOceanPipelineMonitorConfigs.model_validate_json(
@@ -214,6 +221,26 @@ class TestCodeOceanPipelineMonitorConfigs(unittest.TestCase):
             )
         )
         self.assertEqual(codeocean_configs, expected_deser_model)
+
+    def test_validator(self):
+        """Tests that users cannot set more than 10 tags."""
+
+        tags = [f"a_{x}" for x in range(11)]
+        with self.assertRaises(ValidationError) as e:
+            CodeOceanPipelineMonitorConfigs(
+                pipeline_monitor_capsule_settings=[],
+                register_data_settings=DataAssetParams(
+                    name="custom_name",
+                    mount="custom_mount",
+                    tags=tags,
+                ),
+            )
+        errors = json.loads(e.exception.json())
+        self.assertEqual(1, len(errors))
+        self.assertEqual(
+            "Value error, Tags can only have a max of 10 items!",
+            errors[0]["msg"],
+        )
 
 
 class TestBasicUploadJobConfigs(unittest.TestCase):
@@ -631,21 +658,31 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
         """Tests that the codeocean defaults are set."""
         expected_codeocean_configs = {
             "job_type": "behavior",
-            "pipeline_monitor_capsule_id": None,
-            "pipeline_monitor_capsule_settings": None,
-            "raw_data_tags": ["123456", "behavior", "raw"],
-            "custom_raw_codeocean_metadata": {
-                "data level": "raw",
-                "experiment type": "behavior",
-                "subject id": "123456",
+            "register_data_settings": {
+                "name": "behavior_123456_2020-10-13_13-10-10",
+                "tags": ["123456", "behavior", "raw"],
+                "mount": "behavior_123456_2020-10-13_13-10-10",
+                "source": {
+                    "aws": {
+                        "bucket": "private",
+                        "prefix": "behavior_123456_2020-10-13_13-10-10",
+                        "keep_on_external_storage": True,
+                        "public": False,
+                    }
+                },
+                "custom_metadata": {
+                    "data level": "raw",
+                    "experiment type": "behavior",
+                    "subject id": "123456",
+                },
             },
-            "raw_data_mount": "behavior_123456_2020-10-13_13-10-10",
         }
+
         self.assertEqual(
-            expected_codeocean_configs,
-            json.loads(
-                self.example_configs.codeocean_configs.model_dump_json()
+            CodeOceanPipelineMonitorConfigs.model_validate_json(
+                json.dumps(expected_codeocean_configs)
             ),
+            self.example_configs.codeocean_configs,
         )
 
     def test_set_codeocean_configs_override(self):
@@ -653,7 +690,7 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
 
         example_configs = BasicUploadJobConfigs(
             project_name="Behavior Platform",
-            s3_bucket="some_bucket2",
+            s3_bucket="open",
             platform=Platform.BEHAVIOR,
             modalities=[
                 ModalityConfigs(
@@ -663,28 +700,41 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
             ],
             subject_id="123456",
             acq_datetime=datetime(2020, 10, 13, 13, 10, 10),
-            metadata_dir="/some/metadata/dir/",
-            metadata_dir_force=False,
-            force_cloud_sync=False,
             codeocean_configs=CodeOceanPipelineMonitorConfigs(
-                raw_data_tags=[], custom_raw_codeocean_metadata=dict()
+                register_data_settings=DataAssetParams(
+                    name="custom_name",
+                    mount="custom_mount",
+                    tags=list(),
+                    custom_metadata=dict(),
+                )
             ),
         )
 
         expected_codeocean_configs = {
             "job_type": "behavior",
-            "pipeline_monitor_capsule_id": None,
-            "pipeline_monitor_capsule_settings": None,
-            "raw_data_tags": ["123456", "behavior"],
-            "custom_raw_codeocean_metadata": {
-                "experiment type": "behavior",
-                "subject id": "123456",
+            "register_data_settings": {
+                "name": "custom_name",
+                "tags": ["123456", "behavior"],
+                "mount": "custom_mount",
+                "source": {
+                    "aws": {
+                        "bucket": "open",
+                        "prefix": "behavior_123456_2020-10-13_13-10-10",
+                        "keep_on_external_storage": True,
+                        "public": True,
+                    }
+                },
+                "custom_metadata": {
+                    "experiment type": "behavior",
+                    "subject id": "123456",
+                },
             },
-            "raw_data_mount": "behavior_123456_2020-10-13_13-10-10",
         }
         self.assertEqual(
-            expected_codeocean_configs,
-            json.loads(example_configs.codeocean_configs.model_dump_json()),
+            CodeOceanPipelineMonitorConfigs.model_validate_json(
+                json.dumps(expected_codeocean_configs)
+            ),
+            example_configs.codeocean_configs,
         )
 
 
