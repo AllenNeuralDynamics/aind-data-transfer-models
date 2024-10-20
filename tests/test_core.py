@@ -923,6 +923,42 @@ class TestSubmitJobRequest(unittest.TestCase):
         deser_model = BasicUploadJobConfigs.model_validate_json(config_json)
         self.assertEqual(config, deser_model)
 
+    def test_map_legacy_params(self):
+        """Tests legacy fields are mapped to CodeOcean configs."""
+        config = BasicUploadJobConfigs(
+            project_name="some project",
+            platform=Platform.ECEPHYS,
+            modalities=[
+                ModalityConfigs(modality=Modality.ECEPHYS, source="some_dir")
+            ],
+            subject_id="123456",
+            acq_datetime=datetime(2020, 1, 2, 3, 4, 5),
+            input_data_mount="ecephys_opto",
+            process_capsule_id="123-def",
+        )
+        expected_model = {
+            "run_params": {
+                "capsule_id": "123-def",
+                "data_assets": [{"id": "", "mount": "ecephys_opto"}],
+            },
+            "capture_settings": {
+                "tags": ["derived", "123456", "ecephys"],
+                "custom_metadata": {
+                    "experiment type": "ecephys",
+                    "subject id": "123456",
+                    "data level": "derived",
+                },
+            },
+        }
+        self.assertEqual(
+            [
+                PipelineMonitorSettings.model_validate_json(
+                    json.dumps(expected_model)
+                )
+            ],
+            config.codeocean_configs.pipeline_monitor_capsule_settings,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
