@@ -23,7 +23,8 @@ dependencies = [
     'aind-data-schema-models>=0.3.2',
     'email-validator',
     'aind-metadata-mapper==0.18.2',
-    'aind-codeocean-pipeline-monitor>=0.4.1'
+    'aind-codeocean-pipeline-monitor>=0.4.1',
+    'codeocean'
 ]
 
 [project.optional-dependencies]
