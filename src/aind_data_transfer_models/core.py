@@ -6,9 +6,23 @@ import re
 from copy import deepcopy
 from datetime import datetime
 from pathlib import PurePosixPath
-from typing import Any, ClassVar, List, Literal, Optional, Set, Union, get_args
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Set,
+    Union,
+    get_args,
+)
 
-from aind_data_schema_models.data_name_patterns import build_data_name
+from aind_codeocean_pipeline_monitor.models import PipelineMonitorSettings
+from aind_data_schema_models.data_name_patterns import (
+    DataLevel,
+    build_data_name,
+)
 from aind_data_schema_models.modalities import Modality
 from aind_data_schema_models.platforms import Platform
 from aind_metadata_mapper.models import (
@@ -163,6 +177,69 @@ class ModalityConfigs(BaseSettings):
         return self
 
 
+class CodeOceanPipelineMonitorConfigs(BaseSettings):
+    """
+    Configs for handling registering data to Code Ocean and requesting
+    Code Ocean pipelines to run on the newly registered data. The transfer
+    service will provide defaults, but users can customize these settings if
+    they wish.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    job_type: Optional[str] = Field(
+        default=None,
+        description=(
+            "Legacy field that may be deprecated in the future. Determines "
+            "which default processing pipeline(s) will be run in Code Ocean. "
+            "A list will be made available in the transfer service UI. "
+            "If None, then platform abbreviation will be used."
+        ),
+    )
+    pipeline_monitor_capsule_id: Optional[str] = Field(
+        default=None,
+        description=(
+            "If set to None, then default will be used. If set to an empty "
+            "string, then no request will be sent. If set to a non-empty "
+            "string, will use the user provided value."
+        ),
+    )
+    pipeline_monitor_capsule_settings: Optional[
+        List[PipelineMonitorSettings]
+    ] = Field(
+        default=None,
+        description=(
+            "If set to None, then defaults for job_type will be used. If set "
+            "to an empty list, then no request will be sent. If set to a "
+            "non-empty list, will use the user provided values and will not "
+            "use any defaults. A max of 5 pipelines can be requested. Please "
+            "talk to an admin if more are needed."
+        ),
+        max_items=5,
+    )
+    raw_data_tags: List[str] = Field(
+        default=[DataLevel.RAW.value],
+        description=(
+            "The subject id, and platform will always be attached to raw data "
+            "registered to Code Ocean. Max 10. Please talk to an admin if "
+            "more are needed."
+        ),
+        max_items=10,
+    )
+    custom_raw_codeocean_metadata: Dict[str, str] = Field(
+        default={"data level": DataLevel.RAW.value},
+        description=(
+            "The fields 'subject id' and 'experiment type' will be attached "
+            "dynamically. The shape of the dictionary is strict, but not"
+            "documented yet."
+        ),
+    )
+    raw_data_mount: Optional[str] = Field(
+        default=None,
+        description="If None, then will set the mount to the s3_prefix.",
+    )
+
+
 class BasicUploadJobConfigs(BaseSettings):
     """Configuration for the basic upload job"""
 
@@ -262,11 +339,18 @@ class BasicUploadJobConfigs(BaseSettings):
     trigger_capsule_configs: Optional[TriggerConfigModel] = Field(
         default=None,
         description=(
-            "Settings for the codeocean trigger capsule. "
-            "Validators will set defaults."
+            "(deprecated. Use codeocean_configs) Settings for the codeocean "
+            "trigger capsule. Validators will set defaults."
         ),
-        title="Trigger Capsule Configs",
+        title="Trigger Capsule Configs (deprecated. Use codeocean_configs)",
         validate_default=True,
+    )
+    codeocean_configs: CodeOceanPipelineMonitorConfigs = Field(
+        default=CodeOceanPipelineMonitorConfigs(),
+        description=(
+            "User can pass custom fields. Otherwise, transfer service will "
+            "handle setting default values at runtime."
+        ),
     )
 
     @computed_field
@@ -545,6 +629,35 @@ class BasicUploadJobConfigs(BaseSettings):
             )
         )
         return validated_self
+
+    @model_validator(mode="after")
+    def set_codeocean_configs(self):
+        """Merge user defined fields with some defaults."""
+        default_raw_data_tags = [
+            self.platform.abbreviation,
+            self.subject_id,
+        ]
+        user_tags = self.codeocean_configs.raw_data_tags
+        merged_tags = list(set(default_raw_data_tags).union(user_tags))
+        self.codeocean_configs.raw_data_tags = sorted(merged_tags)
+        default_raw_custom_metadata = {
+            "experiment type": self.platform.abbreviation,
+            "subject id": self.subject_id,
+        }
+        user_raw_custom_metadata = (
+            self.codeocean_configs.custom_raw_codeocean_metadata
+        )
+        user_raw_custom_metadata.update(default_raw_custom_metadata)
+        self.codeocean_configs.custom_raw_codeocean_metadata = (
+            user_raw_custom_metadata
+        )
+        if self.codeocean_configs.raw_data_mount is None:
+            self.codeocean_configs.raw_data_mount = self.s3_prefix
+
+        # For legacy behavior, this may be removed in the future
+        if self.codeocean_configs.job_type is None:
+            self.codeocean_configs.job_type = self.platform.abbreviation
+        return self
 
 
 class SubmitJobRequest(S3UploadSubmitJobRequest):
