@@ -11,6 +11,8 @@
 
 ## Usage
 
+For more detailed examples, please check out the [readthedocs](https://aind-data-transfer-service.readthedocs.io/en/latest/UserGuide.html#using-the-rest-api).
+
 ## Installation
 - From pypi, run
 ```bash

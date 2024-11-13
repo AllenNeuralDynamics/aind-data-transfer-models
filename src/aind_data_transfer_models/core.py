@@ -182,6 +182,15 @@ class CodeOceanPipelineMonitorConfigs(BaseSettings):
 
     model_config = ConfigDict(extra="allow")
 
+    capture_results_to_default_bucket: bool = Field(
+        default=True,
+        description=(
+            "If set to True, then the results from each "
+            "pipeline_monitor_capsule_settings pipeline will be captured to a "
+            "default bucket. Set this to False to not modify the capture "
+            "settings."
+        ),
+    )
     job_type: Optional[str] = Field(
         default=None,
         description=(
