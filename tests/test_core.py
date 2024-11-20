@@ -894,7 +894,6 @@ class TestSubmitJobRequest(unittest.TestCase):
             acq_datetime=datetime(2020, 1, 2, 3, 4, 5),
             metadata_configs=metadata_configs,
         )
-        # config_json = json.loads(config.model_dump_json())
         self.assertEqual(
             Organization.AIBS,
             config.metadata_configs.raw_data_description_settings.institution,
