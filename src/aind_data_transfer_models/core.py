@@ -17,6 +17,7 @@ from aind_data_schema_models.data_name_patterns import (
     build_data_name,
 )
 from aind_data_schema_models.modalities import Modality
+from aind_data_schema_models.organizations import Organization
 from aind_data_schema_models.platforms import Platform
 from aind_metadata_mapper.models import (
     JobSettings as GatherMetadataJobSettings,
@@ -546,6 +547,10 @@ class BasicUploadJobConfigs(BaseSettings):
             del user_defined_metadata_configs["session_settings"]
         else:
             user_defined_session_settings = None
+        if user_defined_metadata_configs.get("raw_data_description_settings") is not None:
+            institution = user_defined_metadata_configs["raw_data_description_settings"].get("institution", Organization.AIND)
+        else:
+            institution = Organization.AIND
         validated_self = handler(all_configs)
         metadata_dir = (
             None
@@ -561,6 +566,7 @@ class BasicUploadJobConfigs(BaseSettings):
                 subject_id=validated_self.subject_id
             ),
             "raw_data_description_settings": RawDataDescriptionSettings(
+                institution=institution,
                 name=validated_self.s3_prefix,
                 project_name=validated_self.project_name,
                 modality=([mod.modality for mod in validated_self.modalities]),
