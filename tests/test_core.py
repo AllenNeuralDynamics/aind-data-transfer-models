@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 
 from aind_codeocean_pipeline_monitor.models import PipelineMonitorSettings
 from aind_data_schema_models.modalities import Modality
+from aind_data_schema_models.organizations import Organization
 from aind_data_schema_models.platforms import Platform
 from aind_metadata_mapper.models import BergamoSessionJobSettings
 from aind_metadata_mapper.models import (
@@ -876,6 +877,27 @@ class TestSubmitJobRequest(unittest.TestCase):
         self.assertEqual(
             {"begin", "fail"},
             job_settings.upload_jobs[1].email_notification_types,
+        )
+
+    def test_institution_setting(self):
+        """Tests that users can set the institution in the metadata configs."""
+        metadata_configs = {
+            "raw_data_description_settings": {"institution": Organization.AIBS}
+        }
+        config = BasicUploadJobConfigs(
+            project_name="some project",
+            platform=Platform.ECEPHYS,
+            modalities=[
+                ModalityConfigs(modality=Modality.ECEPHYS, source="some_dir")
+            ],
+            subject_id="123456",
+            acq_datetime=datetime(2020, 1, 2, 3, 4, 5),
+            metadata_configs=metadata_configs,
+        )
+        # config_json = json.loads(config.model_dump_json())
+        self.assertEqual(
+            Organization.AIBS,
+            config.metadata_configs.raw_data_description_settings.institution,
         )
 
     def test_extra_allow(self):

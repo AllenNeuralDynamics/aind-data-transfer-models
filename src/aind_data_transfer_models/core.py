@@ -6,7 +6,17 @@ import re
 from copy import deepcopy
 from datetime import datetime
 from pathlib import PurePosixPath
-from typing import Any, ClassVar, List, Literal, Optional, Set, Union, get_args
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Set,
+    Union,
+    get_args,
+)
 
 from aind_codeocean_pipeline_monitor.models import (
     CaptureSettings,
@@ -530,11 +540,11 @@ class BasicUploadJobConfigs(BaseSettings):
             if isinstance(
                 all_configs.get("metadata_configs"), GatherMetadataJobSettings
             ):
-                user_defined_metadata_configs = all_configs.get(
-                    "metadata_configs"
-                ).model_dump()
+                user_defined_metadata_configs: Dict[str, Any] = (
+                    all_configs.get("metadata_configs").model_dump()
+                )
             else:
-                user_defined_metadata_configs = deepcopy(
+                user_defined_metadata_configs: Dict[str, Any] = deepcopy(
                     all_configs.get("metadata_configs")
                 )
             del all_configs["metadata_configs"]
@@ -547,8 +557,13 @@ class BasicUploadJobConfigs(BaseSettings):
             del user_defined_metadata_configs["session_settings"]
         else:
             user_defined_session_settings = None
-        if user_defined_metadata_configs.get("raw_data_description_settings") is not None:
-            institution = user_defined_metadata_configs["raw_data_description_settings"].get("institution", Organization.AIND)
+        if (
+            user_defined_metadata_configs.get("raw_data_description_settings")
+            is not None
+        ):
+            institution = user_defined_metadata_configs[
+                "raw_data_description_settings"
+            ].get("institution", Organization.AIND)
         else:
             institution = Organization.AIND
         validated_self = handler(all_configs)
