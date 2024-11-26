@@ -376,8 +376,8 @@ class BasicUploadJobConfigs(BaseSettings):
         title="Trigger Capsule Configs (deprecated. Use codeocean_configs)",
         validate_default=True,
     )
-    codeocean_configs: CodeOceanPipelineMonitorConfigs = Field(
-        default=CodeOceanPipelineMonitorConfigs(),
+    codeocean_configs: Optional[CodeOceanPipelineMonitorConfigs] = Field(
+        default=None,
         description=(
             "User can pass custom fields. Otherwise, transfer service will "
             "handle setting default values at runtime."
@@ -670,6 +670,15 @@ class BasicUploadJobConfigs(BaseSettings):
             )
         )
         return validated_self
+
+    @field_validator("codeocean_configs", mode="before")
+    def set_default_codeocean_configs(
+        cls, codeocean_configs: Optional[CodeOceanPipelineMonitorConfigs]
+    ) -> CodeOceanPipelineMonitorConfigs:
+        """Sets default values for codeocean_configs"""
+        if codeocean_configs is None:
+            codeocean_configs = CodeOceanPipelineMonitorConfigs()
+        return codeocean_configs
 
     @model_validator(mode="after")
     def set_codeocean_configs(self):
