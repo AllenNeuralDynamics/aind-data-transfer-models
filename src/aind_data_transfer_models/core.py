@@ -93,7 +93,7 @@ class ModalityConfigs(BaseSettings):
         ),
         title="Extra Configs",
     )
-    job_settings: Optional[dict] = Field(
+    job_settings: Optional[Union[dict, str]] = Field(
         default=None,
         description=(
             "Configs to pass into modality compression job. Must be json "
@@ -131,6 +131,19 @@ class ModalityConfigs(BaseSettings):
             return Modality.from_abbreviation(modality_abbreviation)
         else:
             return input_modality
+    
+    @field_validator("job_settings", mode="before")
+    def parse_job_settings_str(
+        cls, job_settings: Optional[Union[dict, str]]
+    ) -> Optional[dict]:
+        """Attempt to convert job_settings to a dict if it is a string"""
+        if isinstance(job_settings, str):
+            try:
+                job_settings_dict = json.loads(job_settings)
+                return job_settings_dict
+            except Exception as e:
+                raise ValueError(f"job_settings must be json serializable! {e}")
+        return job_settings
 
     @field_validator("compress_raw_data", mode="after")
     def get_compress_source_default(
