@@ -93,7 +93,7 @@ class ModalityConfigs(BaseSettings):
         ),
         title="Extra Configs",
     )
-    job_settings: Optional[dict] = Field(
+    job_settings: Optional[Union[dict, str]] = Field(
         default=None,
         description=(
             "Configs to pass into modality compression job. Must be json "
@@ -131,6 +131,21 @@ class ModalityConfigs(BaseSettings):
             return Modality.from_abbreviation(modality_abbreviation)
         else:
             return input_modality
+
+    @field_validator("job_settings", mode="before")
+    def parse_job_settings_str(
+        cls, job_settings: Optional[Union[dict, str]]
+    ) -> Optional[dict]:
+        """Attempt to convert job_settings to a dict if it is a string"""
+        if isinstance(job_settings, str):
+            try:
+                job_settings_dict = json.loads(job_settings)
+                return job_settings_dict
+            except Exception as e:
+                raise ValueError(
+                    f"job_settings must be json serializable! {e}"
+                )
+        return job_settings
 
     @field_validator("compress_raw_data", mode="after")
     def get_compress_source_default(
@@ -361,8 +376,8 @@ class BasicUploadJobConfigs(BaseSettings):
         title="Trigger Capsule Configs (deprecated. Use codeocean_configs)",
         validate_default=True,
     )
-    codeocean_configs: CodeOceanPipelineMonitorConfigs = Field(
-        default=CodeOceanPipelineMonitorConfigs(),
+    codeocean_configs: Optional[CodeOceanPipelineMonitorConfigs] = Field(
+        default=None,
         description=(
             "User can pass custom fields. Otherwise, transfer service will "
             "handle setting default values at runtime."
@@ -655,6 +670,15 @@ class BasicUploadJobConfigs(BaseSettings):
             )
         )
         return validated_self
+
+    @field_validator("codeocean_configs", mode="before")
+    def set_default_codeocean_configs(
+        cls, codeocean_configs: Optional[CodeOceanPipelineMonitorConfigs]
+    ) -> CodeOceanPipelineMonitorConfigs:
+        """Sets default values for codeocean_configs"""
+        if codeocean_configs is None:
+            codeocean_configs = CodeOceanPipelineMonitorConfigs()
+        return codeocean_configs
 
     @model_validator(mode="after")
     def set_codeocean_configs(self):

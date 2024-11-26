@@ -181,6 +181,28 @@ class TestModalityConfigs(unittest.TestCase):
         self.assertEqual(1, len(errors))
         self.assertTrue(expected_error_message_snippet in errors[0]["msg"])
 
+    def test_job_settings_string(self):
+        """Tests that job_settings can be passed in as a string."""
+
+        configs = ModalityConfigs(
+            modality=Modality.ECEPHYS,
+            source="some_dir",
+            job_settings='{"param1": 3, "param2": "abc"}',
+        )
+        self.assertEqual({"param1": 3, "param2": "abc"}, configs.job_settings)
+        with self.assertRaises(ValidationError) as e:
+            ModalityConfigs(
+                modality=Modality.ECEPHYS,
+                source="some_dir",
+                job_settings="some string",
+            )
+        expected_error_message_snippet = (
+            "Value error, job_settings must be json serializable!"
+        )
+        errors = e.exception.errors()
+        self.assertEqual(1, len(errors))
+        self.assertTrue(expected_error_message_snippet in errors[0]["msg"])
+
 
 class TestCodeOceanPipelineMonitorConfigs(unittest.TestCase):
     """Tests CodeOceanPipelineMonitorConfigs class"""
