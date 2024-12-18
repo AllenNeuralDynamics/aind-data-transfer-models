@@ -333,7 +333,7 @@ class BasicUploadJobConfigs(BaseSettings):
     )
     metadata_dir_force: Optional[bool] = Field(
         default=None,
-        description=("Deprecated field. Will be removed in future version."),
+        description="Deprecated field. Will be removed in future version.",
         title="(deprecated) Metadata Directory Force",
     )
     force_cloud_sync: bool = Field(
