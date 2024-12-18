@@ -263,7 +263,6 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
             subject_id="123456",
             acq_datetime=datetime(2020, 10, 13, 13, 10, 10),
             metadata_dir="/some/metadata/dir/",
-            metadata_dir_force=False,
             force_cloud_sync=False,
         )
         cls.example_configs = example_configs
@@ -539,10 +538,6 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
         self.assertEqual(
             configs.metadata_configs.metadata_dir,
             configs.metadata_dir.as_posix(),
-        )
-        self.assertEqual(
-            configs.metadata_configs.metadata_dir_force,
-            configs.metadata_dir_force,
         )
         self.assertEqual(
             configs.metadata_configs.directory_to_write_to, Path("stage")

@@ -331,13 +331,10 @@ class BasicUploadJobConfigs(BaseSettings):
         description="Directory of metadata",
         title="Metadata Directory",
     )
-    metadata_dir_force: bool = Field(
-        default=False,
-        description=(
-            "Whether to override metadata from service with metadata in "
-            "optional metadata directory"
-        ),
-        title="Metadata Directory Force",
+    metadata_dir_force: Optional[bool] = Field(
+        default=None,
+        description=("Deprecated field. Will be removed in future version."),
+        title="(deprecated) Metadata Directory Force",
     )
     force_cloud_sync: bool = Field(
         default=False,
@@ -586,7 +583,6 @@ class BasicUploadJobConfigs(BaseSettings):
                 project_name=validated_self.project_name,
                 modality=([mod.modality for mod in validated_self.modalities]),
             ),
-            "metadata_dir_force": validated_self.metadata_dir_force,
         }
         # Override user defined values if they were set.
         user_defined_metadata_configs.update(default_metadata_configs)
