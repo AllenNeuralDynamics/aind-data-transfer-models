@@ -29,6 +29,7 @@ from aind_data_transfer_models.core import (
     CodeOceanPipelineMonitorConfigs,
     ModalityConfigs,
     SubmitJobRequest,
+    validation_context,
 )
 from aind_data_transfer_models.s3_upload_configs import (
     BucketType,
@@ -282,6 +283,38 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
         self.assertEqual(
             "behavior_123456_2020-10-13_13-10-10",
             self.example_configs.s3_prefix,
+        )
+
+    def test_project_names_validation(self):
+        """Test project_name is validated against list context provided."""
+
+        model = json.loads(self.example_configs.model_dump_json())
+        with validation_context(
+            {"project_names": ["Behavior Platform", "Other Platform"]}
+        ):
+            round_trip_model = BasicUploadJobConfigs(**model)
+
+        self.assertEqual(
+            "behavior_123456_2020-10-13_13-10-10",
+            round_trip_model.s3_prefix,
+        )
+
+    def test_project_names_validation_fail(self):
+        """Test project_name is validated against list context provided and
+        fails validation."""
+
+        model = json.loads(self.example_configs.model_dump_json())
+        with self.assertRaises(ValidationError) as err:
+            with validation_context({"project_names": ["Other Platform"]}):
+                BasicUploadJobConfigs(**model)
+
+        err_msg = json.loads(err.exception.json())[0]["msg"]
+        self.assertEqual(
+            (
+                "Value error, Behavior Platform must be one of "
+                "['Other Platform']"
+            ),
+            err_msg,
         )
 
     def test_map_bucket(self):
