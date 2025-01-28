@@ -4,7 +4,7 @@ import json
 import unittest
 from datetime import datetime
 from pathlib import Path, PurePosixPath
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, call
 
 from aind_codeocean_pipeline_monitor.models import PipelineMonitorSettings
 from aind_data_schema_models.modalities import Modality
@@ -29,6 +29,7 @@ from aind_data_transfer_models.core import (
     CodeOceanPipelineMonitorConfigs,
     ModalityConfigs,
     SubmitJobRequest,
+    validation_context,
 )
 from aind_data_transfer_models.s3_upload_configs import (
     BucketType,
@@ -284,6 +285,38 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
             self.example_configs.s3_prefix,
         )
 
+    def test_project_names_validation(self):
+        """Test project_name is validated against list context provided."""
+
+        model = json.loads(self.example_configs.model_dump_json())
+        with validation_context(
+            {"project_names": ["Behavior Platform", "Other Platform"]}
+        ):
+            round_trip_model = BasicUploadJobConfigs(**model)
+
+        self.assertEqual(
+            "behavior_123456_2020-10-13_13-10-10",
+            round_trip_model.s3_prefix,
+        )
+
+    def test_project_names_validation_fail(self):
+        """Test project_name is validated against list context provided and
+        fails validation."""
+
+        model = json.loads(self.example_configs.model_dump_json())
+        with self.assertRaises(ValidationError) as err:
+            with validation_context({"project_names": ["Other Platform"]}):
+                BasicUploadJobConfigs(**model)
+
+        err_msg = json.loads(err.exception.json())[0]["msg"]
+        self.assertEqual(
+            (
+                "Value error, Behavior Platform must be one of "
+                "['Other Platform']"
+            ),
+            err_msg,
+        )
+
     def test_map_bucket(self):
         """Test map_bucket method"""
         open_configs = BasicUploadJobConfigs(
@@ -486,10 +519,11 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
             **base_configs,
             process_capsule_id="def-456",
         )
-        mock_warn.assert_called_once_with(
-            "Only one of trigger_capsule_configs or legacy "
-            "process_capsule_id should be set!"
+        warning_msg = (
+            'Only one of trigger_capsule_configs or legacy '
+            'process_capsule_id should be set!'
         )
+        mock_warn.assert_has_calls([call(warning_msg), call(warning_msg)])
 
     def test_set_trigger_capsule_configs_user_defined_process_id(self):
         """Tests set_trigger_capsule_configs values when user defines their

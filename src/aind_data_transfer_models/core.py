@@ -3,6 +3,8 @@
 import json
 import logging
 import re
+from contextlib import contextmanager
+from contextvars import ContextVar
 from copy import deepcopy
 from datetime import datetime
 from pathlib import PurePosixPath
@@ -58,6 +60,31 @@ from aind_data_transfer_models.s3_upload_configs import (
     S3UploadSubmitJobRequest,
 )
 from aind_data_transfer_models.trigger import TriggerConfigModel, ValidJobType
+
+_validation_context: ContextVar[Union[Dict[str, Any], None]] = ContextVar(
+    "_validation_context", default=None
+)
+
+
+@contextmanager
+def validation_context(context: Union[Dict[str, Any], None]) -> None:
+    """
+    Following guide in:
+    https://docs.pydantic.dev/latest/concepts/validators/#validation-context
+    Parameters
+    ----------
+    context : Union[Dict[str, Any], None]
+
+    Returns
+    -------
+    None
+
+    """
+    token = _validation_context.set(context)
+    try:
+        yield
+    finally:
+        _validation_context.reset(token)
 
 
 class ModalityConfigs(BaseSettings):
@@ -258,6 +285,15 @@ class CodeOceanPipelineMonitorConfigs(BaseSettings):
 
 class BasicUploadJobConfigs(BaseSettings):
     """Configuration for the basic upload job"""
+
+    def __init__(self, /, **data: Any) -> None:
+        """Add context manager to init for validating project_names."""
+        super().__init__(**data)
+        self.__pydantic_validator__.validate_python(
+            data,
+            self_instance=self,
+            context=_validation_context.get(),
+        )
 
     model_config = ConfigDict(use_enum_values=True, extra="allow")
 
@@ -741,6 +777,29 @@ class BasicUploadJobConfigs(BaseSettings):
                 pipeline_monitor_settings
             ]
         return self
+
+    @field_validator("project_name", mode="before")
+    def validate_project_name(cls, v: str, info: ValidationInfo) -> str:
+        """
+        Validate the project name. If a list of project_names is provided in a
+        context manager, then it will validate against the list. Otherwise, it
+        won't raise any validation error.
+        Parameters
+        ----------
+        v : str
+          Value input into project_name field.
+        info : ValidationInfo
+
+        Returns
+        -------
+        str
+
+        """
+        project_names = (info.context or dict()).get("project_names")
+        if project_names is not None and v not in project_names:
+            raise ValueError(f"{v} must be one of {project_names}")
+        else:
+            return v
 
 
 class SubmitJobRequest(S3UploadSubmitJobRequest):
