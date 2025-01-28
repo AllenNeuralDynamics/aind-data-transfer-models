@@ -286,9 +286,9 @@ class CodeOceanPipelineMonitorConfigs(BaseSettings):
 class BasicUploadJobConfigs(BaseSettings):
     """Configuration for the basic upload job"""
 
+    # noinspection PyMissingConstructor
     def __init__(self, /, **data: Any) -> None:
         """Add context manager to init for validating project_names."""
-        super().__init__(**data)
         self.__pydantic_validator__.validate_python(
             data,
             self_instance=self,

@@ -4,7 +4,7 @@ import json
 import unittest
 from datetime import datetime
 from pathlib import Path, PurePosixPath
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 from aind_codeocean_pipeline_monitor.models import PipelineMonitorSettings
 from aind_data_schema_models.modalities import Modality
@@ -519,11 +519,10 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
             **base_configs,
             process_capsule_id="def-456",
         )
-        warning_msg = (
-            'Only one of trigger_capsule_configs or legacy '
-            'process_capsule_id should be set!'
+        mock_warn.assert_called_once_with(
+            "Only one of trigger_capsule_configs or legacy "
+            "process_capsule_id should be set!"
         )
-        mock_warn.assert_has_calls([call(warning_msg), call(warning_msg)])
 
     def test_set_trigger_capsule_configs_user_defined_process_id(self):
         """Tests set_trigger_capsule_configs values when user defines their
