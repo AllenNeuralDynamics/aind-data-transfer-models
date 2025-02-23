@@ -348,7 +348,7 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
         self.assertEqual(BucketType.OPEN, open_configs.s3_bucket)
         self.assertEqual(BucketType.SCRATCH, scratch_configs.s3_bucket)
         self.assertEqual(BucketType.PRIVATE, private_configs1.s3_bucket)
-        self.assertEqual(BucketType.PRIVATE, private_configs2.s3_bucket)
+        self.assertEqual(BucketType.DEFAULT, private_configs2.s3_bucket)
         self.assertEqual(BucketType.PRIVATE, private_configs3.s3_bucket)
 
     def test_parse_datetime(self):
@@ -442,7 +442,7 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
         trigger_capsule_configs."""
         expected_configs = TriggerConfigModel(
             job_type=ValidJobType.REGISTER_DATA,
-            bucket="private",
+            bucket="default",
             prefix="behavior_123456_2020-10-13_13-10-10",
             asset_name="behavior_123456_2020-10-13_13-10-10",
             mount="behavior_123456_2020-10-13_13-10-10",
@@ -479,7 +479,7 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
 
         expected_configs = TriggerConfigModel(
             job_type=ValidJobType.RUN_GENERIC_PIPELINE,
-            bucket="private",
+            bucket="default",
             prefix="behavior_123456_2020-10-13_13-10-10",
             asset_name="behavior_123456_2020-10-13_13-10-10",
             mount="custom_mount",
@@ -541,7 +541,7 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
         )
         expected_trigger_configs = TriggerConfigModel(
             job_type=ValidJobType.RUN_GENERIC_PIPELINE,
-            bucket="private",
+            bucket="default",
             prefix="behavior_123456_2020-10-13_13-10-10",
             asset_name="behavior_123456_2020-10-13_13-10-10",
             mount="behavior_123456_2020-10-13_13-10-10",
@@ -693,7 +693,7 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
                 "mount": "behavior_123456_2020-10-13_13-10-10",
                 "source": {
                     "aws": {
-                        "bucket": "private",
+                        "bucket": "default",
                         "prefix": "behavior_123456_2020-10-13_13-10-10",
                         "keep_on_external_storage": True,
                         "public": False,

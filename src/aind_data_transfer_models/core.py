@@ -337,9 +337,12 @@ class BasicUploadJobConfigs(BaseSettings):
         title="Process Capsule ID",
     )
     s3_bucket: Literal[
-        BucketType.PRIVATE, BucketType.OPEN, BucketType.SCRATCH
-    ] = Field(
         BucketType.PRIVATE,
+        BucketType.OPEN,
+        BucketType.SCRATCH,
+        BucketType.DEFAULT,
+    ] = Field(
+        BucketType.DEFAULT,
         description=(
             "Bucket where data will be uploaded. If null, will upload to "
             "default bucket. Uploading to scratch will be deprecated in "
@@ -443,12 +446,14 @@ class BasicUploadJobConfigs(BaseSettings):
         stored in the private bucket"""
         if isinstance(bucket, str) and (BucketType.OPEN.value in bucket):
             return BucketType.OPEN
+        elif isinstance(bucket, str) and (BucketType.PRIVATE.value in bucket):
+            return BucketType.PRIVATE
         elif isinstance(bucket, str) and (BucketType.SCRATCH.value in bucket):
             return BucketType.SCRATCH
         elif isinstance(bucket, BucketType):
             return bucket
         else:
-            return BucketType.PRIVATE
+            return BucketType.DEFAULT
 
     @field_validator("platform", mode="before")
     def parse_platform_string(

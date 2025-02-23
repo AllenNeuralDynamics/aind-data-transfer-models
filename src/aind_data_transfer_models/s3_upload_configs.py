@@ -17,6 +17,7 @@ class BucketType(str, Enum):
     OPEN = "open"
     SCRATCH = "scratch"
     ARCHIVE = "archive"
+    DEFAULT = "default"  # Send data to bucket determined by service
 
 
 class EmailNotificationType(str, Enum):
