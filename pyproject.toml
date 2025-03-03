@@ -20,10 +20,10 @@ dependencies = [
     'pydantic>=2.7',
     'pydantic-settings>=2.0',
     'aind-slurm-rest>=0.1.0',
-    'aind-data-schema-models>=0.3.2',
+    'aind-data-schema-models>=0.3.2,<1.0.0',
     'email-validator',
     'aind-metadata-mapper>=0.18.2',
-    'aind-codeocean-pipeline-monitor>=0.4.1',
+    'aind-codeocean-pipeline-monitor>=0.7.0',
     'codeocean'
 ]
 
