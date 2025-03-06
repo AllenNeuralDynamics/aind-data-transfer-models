@@ -2,7 +2,7 @@
 
 import json
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from unittest.mock import MagicMock, patch
 
@@ -364,8 +364,17 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
             acq_datetime="05/23/2020 09:05:03 AM",
             **self.base_configs,
         )
+        configs3 = BasicUploadJobConfigs(
+            s3_bucket="open",
+            acq_datetime="2020-05-23T09:05:03Z",
+            **self.base_configs,
+        )
         self.assertEqual(datetime(2020, 5, 23, 9, 5, 3), configs1.acq_datetime)
         self.assertEqual(datetime(2020, 5, 23, 9, 5, 3), configs2.acq_datetime)
+        self.assertEqual(
+            datetime(2020, 5, 23, 9, 5, 3, tzinfo=timezone.utc),
+            configs3.acq_datetime,
+        )
 
     def test_parse_datetime_error(self):
         """Test parse_datetime method raises error"""
