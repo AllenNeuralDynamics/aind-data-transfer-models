@@ -472,22 +472,13 @@ class BasicUploadJobConfigs(BaseSettings):
     @field_validator("acq_datetime", mode="before")
     def _parse_datetime(cls, datetime_val: Any) -> datetime:
         """Parses datetime string to %YYYY-%MM-%DD HH:mm:ss"""
-        is_str = isinstance(datetime_val, str)
-        validation_error = ValueError(
-                "Incorrect datetime format, should be"
-                " ISO format (YYYY-MM-DD HH:mm:ss) or MM/DD/YYYY I:MM:SS P"
-            )
-        if is_str and re.match(
+
+        if isinstance(datetime_val, str) and re.match(
             BasicUploadJobConfigs._DATETIME_PATTERN2, datetime_val
         ):
             return datetime.strptime(datetime_val, "%m/%d/%Y %I:%M:%S %p")
-        elif is_str:
-            try:
-                return datetime.fromisoformat(datetime_val)
-            except ValueError:
-                raise validation_error
-        elif is_str:
-            raise validation_error
+        elif isinstance(datetime_val, str):
+            return datetime.fromisoformat(datetime_val.replace("Z", "+00:00"))
         else:
             return datetime_val
 

@@ -369,11 +369,29 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
             acq_datetime="2020-05-23T09:05:03Z",
             **self.base_configs,
         )
+        configs4 = BasicUploadJobConfigs(
+            s3_bucket="open",
+            acq_datetime="2020-05-23T09:05:03.266712",
+            **self.base_configs,
+        )
+        configs5 = BasicUploadJobConfigs(
+            s3_bucket="open",
+            acq_datetime="2020-05-23T09:05:03.266712Z",
+            **self.base_configs,
+        )
         self.assertEqual(datetime(2020, 5, 23, 9, 5, 3), configs1.acq_datetime)
         self.assertEqual(datetime(2020, 5, 23, 9, 5, 3), configs2.acq_datetime)
         self.assertEqual(
             datetime(2020, 5, 23, 9, 5, 3, tzinfo=timezone.utc),
             configs3.acq_datetime,
+        )
+        self.assertEqual(
+            datetime(2020, 5, 23, 9, 5, 3, 266712),
+            configs4.acq_datetime,
+        )
+        self.assertEqual(
+            datetime(2020, 5, 23, 9, 5, 3, 266712, tzinfo=timezone.utc),
+            configs5.acq_datetime,
         )
 
     def test_parse_datetime_error(self):
@@ -386,7 +404,7 @@ class TestBasicUploadJobConfigs(unittest.TestCase):
                 **self.base_configs,
             )
         error_msg = json.loads(e.exception.json())[0]["msg"]
-        self.assertTrue("Value error, Incorrect datetime format" in error_msg)
+        self.assertTrue("Value error, Invalid isoformat string" in error_msg)
 
     def test_parse_platform_string(self):
         """Tests platform can be parsed from string"""
